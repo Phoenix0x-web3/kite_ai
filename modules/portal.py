@@ -83,8 +83,8 @@ class KiteAIPortal(Base):
             "origin": "https://testnet.gokite.ai",
             "referer": "https://testnet.gokite.ai/",
         }
-        self.wallet.auth_token = self.wallet.auth_token
-        self.eoa_address = wallet.eoa_address
+        self.auth_token = self.wallet.auth_token
+        self.eoa_address = self.wallet.eoa_address
 
     @staticmethod
     def _coerce_salt(salt: Union[int, str]) -> int:
@@ -163,7 +163,7 @@ class KiteAIPortal(Base):
                 'user_account_id': '',
                 'user_account_name': '',
                 'eoa_address': self.client.account.address,
-                'smart_account_address': self.eoa_address,
+                'smart_account_address': self.wallet.eoa_address,
                 'referral_code': "",
             }
 
@@ -177,7 +177,6 @@ class KiteAIPortal(Base):
 
             if invite_code:
                 payload["referral_code"] = invite_code
-
             r = await self.session.post(url=url, headers=headers, json=payload, timeout=60)
 
         url = f"{self.OZONE_API}/me"
