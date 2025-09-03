@@ -1,0 +1,67 @@
+#Settings for the application
+
+# Whether to encrypt private keys
+private_key_encryption: true
+
+# Number of threads to use for processing wallets
+threads: 1
+
+#BY DEFAULT: [0,0] - all wallets
+#Example: [2, 6] will run wallets 2,3,4,5,6
+#[4,4] will run only wallet 4
+range_wallets_to_run: [0,0]
+
+# Whether to shuffle the list of wallets before processing
+shuffle_wallets: true
+
+# Working only if range_wallet_to_run = [0,0] 
+# BY DEFAULT: [] - all wallets 
+# Example: [1, 3, 8] - will run only 1, 3 and 8 wallets
+exact_wallets_to_run: []
+
+# Show wallet address in logs
+show_wallet_address_log: false
+
+#Check for github updates
+check_git_updates: true
+
+# the log level for the application. Options: DEBUG, INFO, WARNING, ERROR
+log_level : INFO
+
+# Api Key from https://dash.capmonster.cloud/
+capmonster_api_key: ''
+
+# Delay before running the same wallet again after it has completed all actions (1 - 2 hrs default)
+random_pause_wallet_after_completion:
+  min: 3600
+  max: 7200
+
+# Random pause between actions in seconds
+random_pause_between_actions:
+  min: 5
+  max: 30
+
+# Random pause between actions in seconds
+random_pause_start_wallet:
+  min: 0
+  max: 60
+
+# Onchain Swaps count
+swaps_count:
+  min: 1
+  max: 5
+
+# Dialogs with AI count
+
+dialogs_count:
+  min: 1
+  max: 5
+
+# Invite Codes for kiteAi network, example [invite_code1, invite_code2]
+invite_codes: []
+
+# Telegram Bot ID for notifications
+tg_bot_id: ""
+
+# You can find your chat ID by messaging @userinfobot or using https://web.telegram.org/. (example 1540239116)
+tg_user_id: ""
