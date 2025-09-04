@@ -100,15 +100,8 @@ async def execute(wallets : List[Wallet], task_func, random_pause_wallet_after_c
         await asyncio.sleep(random_pause_wallet_after_completion)
 
 async def activity(action: int):
+    
     if not check_encrypt_param():
-        logger.error(f"Decryption Failed | Wrong Password")
-        return
-
-    try:
-        check_password_wallet = db.one(Wallet, Wallet.id == 1)
-        Client(private_key=check_password_wallet.private_key)
-
-    except Exception:
         logger.error(f"Decryption Failed | Wrong Password")
         return
 

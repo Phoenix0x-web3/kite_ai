@@ -36,6 +36,11 @@ def parse_proxy(proxy: str | None) -> Optional[str]:
         else:
             print(f"Invalid proxy format: {proxy}")
             return None 
+        
+def pick_proxy(proxies : list, i: int) -> Optional[str]:
+    if not proxies:
+        return None
+    return proxies[i % len(proxies)]
 
 def remove_line_from_file(value: str, filename: str) -> bool:
     file_path = os.path.join(FILES_DIR, filename)
@@ -65,12 +70,13 @@ def read_lines(path: str) -> List[str]:
         return []
     with open(file_path, encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip()]
-    
+
 class Import:
+
 
     @staticmethod
     def parse_wallet_from_txt() -> List[Dict[str, Optional[str]]]:
-        
+
         private_keys   = read_lines("private_keys.txt")
         proxies        = read_lines("proxy.txt")
         twitter_tokens = read_lines("twitter_tokens.txt")
@@ -81,19 +87,11 @@ class Import:
 
         record_count = len(private_keys)
 
-        def pick_proxy(i: int) -> Optional[str]:
-            if not proxies:
-                return None
-            if i < len(proxies):
-                return proxies[i % len(proxies)]
-
-            return random.choice(proxies)
-
         wallets: List[Dict[str, Optional[str]]] = []
         for i in range(record_count):
             wallets.append({
                 "private_key": private_keys[i],
-                "proxy": parse_proxy(pick_proxy(i)),
+                "proxy": parse_proxy(pick_proxy(proxies, i)),
                 "twitter_token": twitter_tokens[i] if i < len(twitter_tokens) else None,
                 "discord_token": discord_tokens[i] if i < len(discord_tokens) else None,
             })
@@ -103,11 +101,12 @@ class Import:
 
     @staticmethod
     async def wallets():
-        
         check_encrypt_param(confirm=True)
                 
         raw_wallets = Import.parse_wallet_from_txt()
 
+        logger.success("Wallet import to the database is in progress…")
+        
         wallets = [SimpleNamespace(**w) for w in raw_wallets]
 
         imported: list[Wallet] = []
@@ -141,7 +140,7 @@ class Import:
                     wallet_instance.private_key = prk_encrypt(decoded_private_key) if not 'gAAAA' in wl.private_key else wl.private_key
                     changed = True
 
-                if wallet_instance.proxy != parse_proxy(wl.proxy):
+                if wallet_instance.proxy != wl.proxy:
                     wallet_instance.proxy = wl.proxy
                     changed = True
 
@@ -183,59 +182,49 @@ class Import:
             f'Done! imported wallets: {len(imported)}/{total}; '
             f'edited wallets: {len(edited)}/{total}; total: {total}'
         )
-
-       
+        
+        
     
 class Sync:
     
     @staticmethod
-    def parse_tokens_and_proxies_from_txt() -> List[Dict[str, Optional[str]]]:
+    def parse_tokens_and_proxies_from_txt(wallets : List) -> List[Dict[str, Optional[str]]]:
 
         proxies        = read_lines("proxy.txt")
         twitter_tokens = read_lines("twitter_tokens.txt")
         discord_tokens = read_lines("discord_tokens.txt")
         
-        record_count = max(len(twitter_tokens), len(discord_tokens))
+        record_count = len(wallets)
 
-        def pick_proxy(i: int) -> Optional[str]:
-            if not proxies:
-                return None
-            if i < len(proxies):
-                return proxies[i % len(proxies)]
-
-            return random.choice(proxies)
-
-        wallets: List[Dict[str, Optional[str]]] = []
+        wallet_auxiliary: List[Dict[str, Optional[str]]] = []
         for i in range(record_count):
-            wallets.append({
-                "proxy": parse_proxy(pick_proxy(i)),
+            wallet_auxiliary.append({
+                "proxy": parse_proxy(pick_proxy(proxies, i)),
                 "twitter_token": twitter_tokens[i] if i < len(twitter_tokens) else None,
                 "discord_token": discord_tokens[i] if i < len(discord_tokens) else None,
             })
 
-        return wallets
+        return wallet_auxiliary
     
 
     @staticmethod
     async def sync_wallets_with_tokens_and_proxies():
-        
         if not check_encrypt_param():
             logger.error(f"Decryption Failed | Wrong Password")
             return
-    
-        wallet_auxiliary_data_raw  = Sync.parse_tokens_and_proxies_from_txt()
-
-        wallet_auxiliary_data = [SimpleNamespace(**w) for w in wallet_auxiliary_data_raw]
-          
+               
         wallets = db.all(Wallet)
 
- 
-        if len(wallet_auxiliary_data) != len(wallets):
-            logger.warning("Mismatch between wallet data and tokens/proxies data. Exiting sync.")
-            return
-        
         if len(wallets) <= 0:
             logger.warning("No wallets in DB, nothing to update")
+            return
+        
+        wallet_auxiliary_data_raw  = Sync.parse_tokens_and_proxies_from_txt(wallets)
+
+        wallet_auxiliary_data = [SimpleNamespace(**w) for w in wallet_auxiliary_data_raw]
+        
+        if len(wallet_auxiliary_data) != len(wallets):
+            logger.warning("Mismatch between wallet data and tokens/proxies data. Exiting sync.")
             return
         
         total = len(wallets)

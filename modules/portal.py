@@ -352,7 +352,7 @@ class KiteAIPortal(Base):
         r = await self.session.get(url=url, headers=headers, timeout=60)
         r.raise_for_status()
 
-        return r.json().get('data').get('balances')
+        return r.json().get('data').get('balances').get('kite')
 
 
     async def withdrawal_from_portal(self, amount: int):
