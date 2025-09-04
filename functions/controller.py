@@ -1,10 +1,13 @@
 import asyncio
 import random
+from datetime import datetime
 
 from loguru import logger
 
+from data.settings import Settings
 from libs.eth_async.client import Client
 from libs.base import Base
+from modules.onchain import KiteOnchain
 from modules.portal import KiteAIPortal
 
 from utils.db_api.models import Wallet
@@ -20,6 +23,7 @@ class Controller:
         self.wallet = wallet
         self.base = Base(client=client, wallet=wallet)
         self.portal = KiteAIPortal(client=client, wallet=wallet)
+        self.onchain = KiteOnchain(client=client, wallet=wallet)
 
     @controller_log('Update Points')
     async def update_db_by_user_info(self):
@@ -36,10 +40,14 @@ class Controller:
 
     async def build_actions(self):
 
+        settings = Settings()
+
         actions = []
 
         build_actions = []
         user_info = await self.portal.get_user_info()
+
+        swaps_count = random.randint(settings.swaps_count_min, settings.swaps_count_max)
 
         if not user_info['onboarding_quiz_completed']:
             actions.append(lambda: self.portal.onboard_flow())
@@ -59,6 +67,26 @@ class Controller:
             build_actions.extend(
                 [lambda: self.portal.claim_badge(badge_id=badge["collectionId"]) for badge in badges]
             )
+
+        now = datetime.now()
+
+        if self.wallet.next_faucet_time <= now:
+            build_actions.append(lambda: self.portal.on_chain_faucet())
+
+        if not await self.onchain.check_bridge_status():
+            build_actions.append(lambda: self.onchain.controller(action='bridge'))
+
+
+        balance = await self.client.wallet.balance()
+
+        if float(balance.Ether) == 0:
+            portal_balance = await self.portal.get_balances()
+
+            if portal_balance > 0.01:
+                build_actions.append(lambda: self.portal.withdrawal_from_portal(amount=1))
+
+        if float(balance.Ether) > 0:
+            build_actions += [lambda: self.onchain.controller(action='swap') for _ in range(swaps_count)]
 
         # portal_balance = await self.portal.get_balances()
         #
