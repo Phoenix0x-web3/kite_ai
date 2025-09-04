@@ -3,7 +3,7 @@ import json
 import random
 import time
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any, Dict, Optional, Union
 
 from eth_abi.abi import encode as abi_encode
@@ -100,8 +100,6 @@ class KiteAIPortal(Base):
 
         addr = await c.functions.getAddress(self.client.account.address, salt_u256).call()
         return addr
-
-
 
     @async_retry(retries=5, delay=3)
     async def sign_in(self, registration=False) -> dict:
@@ -274,6 +272,41 @@ class KiteAIPortal(Base):
 
         return r.json().get('data')
 
+    @controller_log('Onchain Faucet')
+    async def on_chain_faucet(self):
+
+        capmoster = CloudflareHandler(wallet=self.wallet)
+
+        captcha_task = await capmoster.get_recaptcha_task_v2(
+            websiteKey=self.FAUCET_SITE_KEY,
+            websiteURL='https://faucet.gokite.ai/',
+        )
+
+        recaptcha_token = await capmoster.get_recaptcha_token(task_id=captcha_task)
+
+        headers = {
+            'content-type': 'application/json',
+            'origin': 'https://faucet.gokite.ai',
+            'priority': 'u=1, i',
+            'referer': 'https://faucet.gokite.ai/',
+        }
+
+        json_data = {
+            'address': self.client.account.address,
+            'token': '',
+            'v2Token': recaptcha_token,
+            'chain': 'KITE',
+            'couponId': '',
+        }
+        url = f"{self.FAUCET_API}/api/SendToken"
+
+        r = await self.session.post(url=url, headers=headers, json=json_data, timeout=60)
+        r.raise_for_status()
+        self.wallet.next_faucet_time = datetime.now() + timedelta(minutes=1441)
+        db.commit()
+        return r.json().get('message')
+
+
     async def daily_quiz(self):
 
         url = f"{self.NEO_API}/v2/quiz/create"
@@ -339,9 +372,10 @@ class KiteAIPortal(Base):
         }
 
         r = await self.session.post(url=url, headers=headers, params=params, json={}, timeout=60)
+
         r.raise_for_status()
 
-        return r.json().get('data').get('packed_user_op').get('user_op_hash')
+        return r.json().get('data').get('user_op_hash')
 
 
     async def get_badges(self):

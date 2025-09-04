@@ -28,7 +28,13 @@ class Settings(Singleton):
         self.random_pause_between_actions_max = json_data.get("random_pause_between_actions", {}).get("max")
         self.random_pause_wallet_after_completion_min = json_data.get("random_pause_wallet_after_completion", {}).get('min')
         self.random_pause_wallet_after_completion_max = json_data.get("random_pause_wallet_after_completion", {}).get('max')
-        
+
+        self.swaps_percent_min = json_data.get("swaps_percent", {}).get('min')
+        self.swaps_percent_max = json_data.get("swaps_percent", {}).get('max')
+
+        self.swaps_count_min = json_data.get("swaps_count", {}).get('min')
+        self.swaps_count_max = json_data.get("swaps_count", {}).get('max')
+
         self.tg_bot_id = json_data.get("tg_bot_id", "")
         self.tg_user_id = json_data.get("tg_user_id", "")
         self.retry = json_data.get("retry", {})
