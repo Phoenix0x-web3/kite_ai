@@ -97,10 +97,10 @@ class Controller:
                     balance = await self.client.wallet.balance()
 
                 else:
-                    raise Exception(f"{self.wallet} | Controller | {onboard}")
+                    raise Exception(f"Controller | {onboard}")
 
-            except:
-                raise RuntimeError(f"{self.wallet} | Controller | Actions stopped")
+            except Exception as e:
+                raise RuntimeError(f"Controller | Actions stopped | {e} ")
 
         user_info = await self.portal.get_user_info()
 

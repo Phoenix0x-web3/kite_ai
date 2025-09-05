@@ -462,7 +462,7 @@ class KiteAIPortal(Base):
                 await asyncio.sleep(random.randint(3, 9))
                 submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=True,
                                            quiz_id=quiz_id)
-                logger.debug(submit)
+                logger.debug(f"{submit} | {q['content']}")
 
             return f'Success submit daily quest'
         else:
@@ -481,7 +481,7 @@ class KiteAIPortal(Base):
                     finish = True
 
                 submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=finish)
-                logger.debug(submit)
+                logger.debug(f"{submit} | {q['content']}")
                 await asyncio.sleep(random.randint(3, 9))
 
             return f"Success Onboarded"
