@@ -319,7 +319,9 @@ class KiteAIPortal(Base):
             self.wallet.next_faucet_time = datetime.now() + timedelta(minutes=1441)
             db.commit()
 
-            raise Exception(f"{r.status_code} | Will retry after 24h | {r.json().get('message')}")
+            return f"Failed | Will retry after 24h | {r.json().get('message')}"
+
+        raise Exception(f'Something wrong | {r.status_code} | {r.text}')
 
     async def daily_quiz(self):
 
