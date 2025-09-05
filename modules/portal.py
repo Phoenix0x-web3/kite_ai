@@ -664,7 +664,7 @@ class KiteAIPortal(Base):
             tx = await self.onchain_api.get_random_tx()
             if len(tx) > 0:
                 tx = random.choice(tx)
-                q = q + " " + tx
+                q = q + " " + tx.get('hash')
 
         try:
             logger.debug(f"{self.wallet} | {self.__module_name__} | Agent: {agent_name} | Question: {q}")
