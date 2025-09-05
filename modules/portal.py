@@ -662,7 +662,9 @@ class KiteAIPortal(Base):
         if agent_name == 'Sherlock':
 
             tx = await self.onchain_api.get_random_tx()
-            q = q + " " + tx
+            if len(tx) > 0:
+                tx = random.choice(tx)
+                q = q + " " + tx
 
         try:
             logger.debug(f"{self.wallet} | {self.__module_name__} | Agent: {agent_name} | Question: {q}")
@@ -682,5 +684,5 @@ class KiteAIPortal(Base):
             if finish:
                 return f"Agent: {agent_name} | Conversation Completed tx_hash: {finish}"
 
-        except Exception as r:
-            raise r
+        except Exception as e:
+            raise Exception(f"Agent{agent_name} | {e}")

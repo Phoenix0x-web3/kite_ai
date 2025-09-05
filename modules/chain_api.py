@@ -26,6 +26,7 @@ class BlockScout(Base):
         data = r.json()
         if data.get('items'):
             items = data.get('items')
+            return items
             tx = random.choice(items)
 
             return tx.get('hash')
