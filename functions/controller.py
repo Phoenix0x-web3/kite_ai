@@ -45,7 +45,7 @@ class Controller:
     async def discord_tasks(self):
         pass
 
-    async def onboard_to_portal(self):
+    async def onboard_to_portal(self, onchain_faucet: False):
         user_info = await self.portal.get_user_info()
 
         if not user_info['onboarding_quiz_completed']:
@@ -53,10 +53,15 @@ class Controller:
             if 'Failed' not in result:
                 logger.success(result)
 
-        if user_info['faucet_claimable']:
-            result = await self.portal.faucet()
+        if onchain_faucet:
+            result = await self.portal.on_chain_faucet()
             if 'Failed' not in result:
                 logger.success(result)
+        else:
+            if user_info['faucet_claimable']:
+                result = await self.portal.faucet()
+                if 'Failed' not in result:
+                    logger.success(result)
 
         return result
 
@@ -76,20 +81,27 @@ class Controller:
 
         if float(balance.Ether) == 0:
 
-            onboard_actions = [lambda: self.portal.on_chain_faucet(),
-                               lambda: self.onboard_to_portal()]
+            onboard_actions = [
+                lambda: self.onboard_to_portal(onchain_faucet=True),
+                lambda: self.onboard_to_portal(onchain_faucet=False)
+                               ]
 
             onboard = random.choice(onboard_actions)
 
-            onboard = await onboard()
+            try:
+                onboard = await onboard()
 
-            await asyncio.sleep(10)
+                await asyncio.sleep(10)
 
-            if 'Failed' not in onboard:
-                logger.success(onboard)
-                balance = await self.client.wallet.balance()
-            else:
-                raise Exception(f"{self.wallet} | Controller | {onboard}")
+                if 'Failed' not in onboard:
+                    logger.success(onboard)
+                    balance = await self.client.wallet.balance()
+
+                else:
+                    raise Exception(f"{self.wallet} | Controller | {onboard}")
+
+            except:
+                raise RuntimeError(f"{self.wallet} | Controller | Actions stopped")
 
         user_info = await self.portal.get_user_info()
 
@@ -113,9 +125,6 @@ class Controller:
             )
 
         now = datetime.now()
-
-        if not self.wallet.next_ai_conversation_time:
-            self.wallet.next_ai_conversation_time = now
 
         if self.wallet.next_faucet_time <= now:
             build_actions.append(lambda: self.portal.on_chain_faucet())

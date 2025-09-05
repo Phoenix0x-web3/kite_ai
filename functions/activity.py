@@ -51,6 +51,10 @@ async def random_activity_task(wallet):
                     else:
                         logger.error(status)
 
+                except RuntimeError as e:
+                    logger.error(e)
+
+                    
                 except Exception as e:
                     logger.error(e)
                     continue
@@ -64,7 +68,7 @@ async def random_activity_task(wallet):
         raise
 
     except Exception as e:
-        logger.exception(f'Core | Activity | {wallet} | {e}')
+        logger.error(f'Core | Activity | {wallet} | {e}')
         raise e
 
 
@@ -82,7 +86,7 @@ async def execute(wallets : List[Wallet], task_func, random_pause_wallet_after_c
                 try:
                     await task_func(wallet)
                 except Exception as e:
-                    logger.exception(f"[{wallet.id}] failed: {e}")
+                    logger.error(f"[{wallet.id}] failed: {e}")
 
         tasks = [asyncio.create_task(sem_task(wallet)) for wallet in wallets]
         await asyncio.gather(*tasks, return_exceptions=True)
