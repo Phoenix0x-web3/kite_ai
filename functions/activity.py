@@ -54,6 +54,7 @@ async def random_activity_task(wallet):
                 except RuntimeError as e:
                     logger.error(e)
 
+                    
                 except Exception as e:
                     logger.error(e)
                     continue
