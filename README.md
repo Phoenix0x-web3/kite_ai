@@ -26,7 +26,9 @@ Kite AI is a Layer-1 blockchain for AI, creating an agentic economy where AI age
 ## Requirements
 - Python version 3.10 - 3.12 
 - Private keys EVM
+- Captcha [Capmonster](https://dash.capmonster.cloud/) for faucet
 - Proxy (optional)
+
 
 
 ## Installation
@@ -97,6 +99,9 @@ exact_wallets_to_run: []
 
 # the log level for the application. Options: DEBUG, INFO, WARNING, ERROR
 log_level : INFO
+
+# Api Key from https://dash.capmonster.cloud/
+capmonster_api_key: ''
 
 # Delay before running the same wallet again after it has completed all actions (1 - 2 hrs default)
 random_pause_wallet_after_completion:
