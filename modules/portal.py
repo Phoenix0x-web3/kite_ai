@@ -614,7 +614,7 @@ class KiteAIPortal(Base):
 
         return tx_hash
 
-    async def aget_commutication(self, service, question):
+    async def agent_commutication(self, service, question):
         url = f"{self.OZONE_API}/agent/inference"
 
         payload = await self.generate_ai_inference_payload(service, question)
