@@ -57,11 +57,19 @@ class Controller:
             result = await self.portal.on_chain_faucet()
             if 'Failed' not in result:
                 logger.success(result)
+
         else:
             if user_info['faucet_claimable']:
                 result = await self.portal.faucet()
+
                 if 'Failed' not in result:
                     logger.success(result)
+                    await asyncio.sleep(15, 10)
+                    portal_balance = await self.portal.get_balances()
+                    if portal_balance.get('kite') > 0.01:
+                        result = await self.portal.withdrawal_from_portal(amount=1)
+
+                    else: return await self.onboard_to_portal(onchain_faucet=True)
 
         return result
 
@@ -83,7 +91,7 @@ class Controller:
 
             onboard_actions = [
                 lambda: self.onboard_to_portal(onchain_faucet=True),
-                lambda: self.onboard_to_portal(onchain_faucet=False)
+                #lambda: self.onboard_to_portal(onchain_faucet=False)
                                ]
 
             onboard = random.choice(onboard_actions)

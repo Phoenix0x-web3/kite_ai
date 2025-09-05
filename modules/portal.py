@@ -273,9 +273,12 @@ class KiteAIPortal(Base):
 
         url = f"{self.OZONE_API}/blockchain/faucet-transfer"
         r = await self.session.post(url=url, headers=headers, json=json_data, timeout=60)
-        r.raise_for_status()
 
-        return r.json().get('data')
+        if r.status_code <= 202:
+
+            return r.json().get('data')
+
+        raise Exception(f"{r.status_code} | {r.json()}")
 
     @controller_log('Onchain Faucet')
     async def on_chain_faucet(self):
@@ -611,7 +614,7 @@ class KiteAIPortal(Base):
 
         return tx_hash
 
-    async def agent_commutication(self, service, question):
+    async def aget_commutication(self, service, question):
         url = f"{self.OZONE_API}/agent/inference"
 
         payload = await self.generate_ai_inference_payload(service, question)
@@ -645,7 +648,9 @@ class KiteAIPortal(Base):
             await self.sign_in()
 
         await asyncio.sleep(1)
-        agent = random.choice(Agents.agents)
+        agents = Agents.agents
+
+        agent = random.choice(agents)
 
         service = agent["service"]
         agent_name = agent["agent"]
