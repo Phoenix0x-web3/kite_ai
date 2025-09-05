@@ -290,6 +290,7 @@ class CloudflareHandler:
             resp = await self.browser.post(
                 url='https://api.capmonster.cloud/createTask',
                 json=json_data,
+                timeout=60
             )
 
             if resp.status_code == 200:
@@ -355,6 +356,7 @@ class CloudflareHandler:
             resp = await self.browser.post(
                 url='https://api.capmonster.cloud/createTask',
                 json=json_data,
+                timeout=60
             )
 
             if resp.status_code == 200:
