@@ -94,7 +94,6 @@ class Controller:
                 await asyncio.sleep(10)
 
                 if 'Failed' not in onboard:
-                    logger.success(onboard)
                     balance = await self.client.wallet.balance()
 
                 else:

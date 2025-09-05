@@ -147,7 +147,7 @@ class CloudflareHandler:
         }
 
         # Maximum wait time (60 seconds)
-        max_attempts = 5
+        max_attempts = 60
 
         for _ in range(max_attempts):
             try:
@@ -170,6 +170,7 @@ class CloudflareHandler:
 
                     elif result['status'] == 'processing':
                         # If task is still processing, wait 1 second
+                        logger.debug(f"{result['status']}")
                         await asyncio.sleep(1)
                         continue
                     else:
