@@ -170,7 +170,6 @@ class CloudflareHandler:
 
                     elif result['status'] == 'processing':
                         # If task is still processing, wait 1 second
-                        logger.debug(f"{result['status']}")
                         await asyncio.sleep(1)
                         continue
                     else:
