@@ -108,7 +108,7 @@ random_pause_between_actions:
   min: 5
   max: 60
 
-# Random pause between actions in seconds
+# Random pause to start wallet in seconds
 random_pause_start_wallet:
   min: 0
   max: 60
