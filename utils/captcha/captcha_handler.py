@@ -147,7 +147,7 @@ class CloudflareHandler:
         }
 
         # Maximum wait time (60 seconds)
-        max_attempts = 60
+        max_attempts = 5
 
         for _ in range(max_attempts):
             try:
@@ -176,12 +176,12 @@ class CloudflareHandler:
                         logger.error(f"{self.browser.wallet} unknown task status: {result['status']}")
                         return None
                 else:
-                    logger.error(f"{self.browser.wallet} error getting task result: {resp.status_code}")
-                    await asyncio.sleep(2)
+                    logger.error(f"{self.browser.wallet} | CaptchaSolver | error getting task result | {resp.status_code} | {resp.text} ")
+                    await asyncio.sleep(3)
                     continue
 
             except Exception as e:
-                logger.error(f"{self.browser.wallet} error getting task result: {str(e)}")
+                logger.error(f"{self.browser.wallet}| CaptchaSolver | error getting task result: {str(e)}")
                 return None
 
         logger.error(f"{self.browser.wallet} exceeded wait time for CapMonster solution")
