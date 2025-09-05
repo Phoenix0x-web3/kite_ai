@@ -47,6 +47,7 @@ class Controller:
 
     async def onboard_to_portal(self, onchain_faucet: False):
         now = datetime.now()
+        result = None
         user_info = await self.portal.get_user_info()
 
         if not user_info['onboarding_quiz_completed']:
