@@ -88,6 +88,7 @@ class KiteAIPortal(Base):
         }
         self.auth_token = self.wallet.auth_token
         self.eoa_address = self.wallet.eoa_address
+        self.paused = False
 
     @staticmethod
     def _coerce_salt(salt: Union[int, str]) -> int:
@@ -629,12 +630,16 @@ class KiteAIPortal(Base):
 
         if r.status_code == 429:
             self.wallet.next_ai_conversation_time = datetime.now() + timedelta(minutes=1441)
+            self.paused = True
             db.commit()
 
         raise Exception(f"{self.wallet} | {r.status_code} | {r.text}")
 
     @controller_log('AI Agent Dialog')
     async def ai_agent_chat_flow(self):
+        if self.paused:
+            return f"AI Agent rate limit"
+
         if not self.wallet.auth_token:
             await self.sign_in()
 
@@ -652,7 +657,6 @@ class KiteAIPortal(Base):
 
             tx = await self.onchain_api.get_random_tx()
             q = q + " " + tx
-
 
         try:
             logger.debug(f"{self.wallet} | {self.__module_name__} | Agent: {agent_name} | Question: {q}")
@@ -674,6 +678,3 @@ class KiteAIPortal(Base):
 
         except Exception as r:
             raise r
-
-
-
