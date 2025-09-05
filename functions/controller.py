@@ -139,7 +139,7 @@ class Controller:
         if not await self.onchain.check_bridge_status():
             build_actions.append(lambda: self.onchain.controller(action='bridge'))
 
-        if self.wallet.next_ai_conversation_time <= now:
+        if self.wallet.next_ai_conversation_time is None or self.wallet.next_ai_conversation_time <= now:
             build_actions += [lambda: self.portal.ai_agent_chat_flow() for _ in range(ai_dialogs_count)]
 
         if float(balance.Ether) > 0:
