@@ -108,7 +108,7 @@ class Controller:
                     raise Exception(f"Controller | {onboard}")
 
             except Exception as e:
-                raise RuntimeError(f"Controller | Actions stopped | {e} ")
+                raise RuntimeError(f"{e} ")
 
         user_info = await self.portal.get_user_info()
 
