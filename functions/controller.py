@@ -101,7 +101,7 @@ class Controller:
                     raise Exception(f"{self.wallet} | Controller | {onboard}")
 
             except:
-                raise RuntimeError(f"{self.wallet} | Controller | {onboard} | Actions stopped")
+                raise RuntimeError(f"{self.wallet} | Controller | Actions stopped")
 
         user_info = await self.portal.get_user_info()
 

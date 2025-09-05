@@ -85,7 +85,7 @@ async def execute(wallets : List[Wallet], task_func, random_pause_wallet_after_c
                 try:
                     await task_func(wallet)
                 except Exception as e:
-                    logger.exception(f"[{wallet.id}] failed: {e}")
+                    logger.error(f"[{wallet.id}] failed: {e}")
 
         tasks = [asyncio.create_task(sem_task(wallet)) for wallet in wallets]
         await asyncio.gather(*tasks, return_exceptions=True)

@@ -179,6 +179,7 @@ class KiteAIPortal(Base):
 
             if invite_code:
                 payload["referral_code"] = invite_code
+
             r = await self.session.post(url=url, headers=headers, json=payload, timeout=60)
 
         url = f"{self.OZONE_API}/me"
