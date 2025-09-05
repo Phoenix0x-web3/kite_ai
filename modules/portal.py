@@ -309,11 +309,19 @@ class KiteAIPortal(Base):
         url = f"{self.FAUCET_API}/api/SendToken"
 
         r = await self.session.post(url=url, headers=headers, json=json_data, timeout=60)
-        r.raise_for_status()
-        self.wallet.next_faucet_time = datetime.now() + timedelta(minutes=1441)
-        db.commit()
-        return r.json().get('message')
 
+        if r.status_code <= 202:
+            self.wallet.next_faucet_time = datetime.now() + timedelta(minutes=1441)
+            db.commit()
+            return r.json().get('message')
+
+        if r.status_code == 429:
+            self.wallet.next_faucet_time = datetime.now() + timedelta(minutes=1441)
+            db.commit()
+
+            return f"Failed | Will retry after 24h | {r.json().get('message')}"
+
+        raise Exception(f'Something wrong | {r.status_code} | {r.text}')
 
     async def daily_quiz(self):
 

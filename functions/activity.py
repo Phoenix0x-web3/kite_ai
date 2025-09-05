@@ -69,7 +69,7 @@ async def random_activity_task(wallet):
         raise
 
     except Exception as e:
-        logger.error(f'Core | Activity | {wallet} | {e}')
+        logger.error(f'Core | Activity | {e} | {wallet}')
         raise e
 
 
