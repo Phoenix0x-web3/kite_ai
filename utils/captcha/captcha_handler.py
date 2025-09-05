@@ -176,7 +176,7 @@ class CloudflareHandler:
                         logger.error(f"{self.browser.wallet} unknown task status: {result['status']}")
                         return None
                 else:
-                    logger.error(f"{self.browser.wallet} | CaptchaSolver | error getting task result | {resp.status_code} | {resp.text} ")
+                    logger.error(f"{self.browser.wallet} | CaptchaSolver | error getting task result | {resp.status_code}")
                     await asyncio.sleep(3)
                     continue
 

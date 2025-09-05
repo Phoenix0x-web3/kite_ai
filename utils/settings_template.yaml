@@ -63,9 +63,3 @@ ai_dialogs_count:
 
 # Invite Codes for kiteAi network, example [invite_code1, invite_code2]
 invite_codes: []
-
-# Telegram Bot ID for notifications
-tg_bot_id: ""
-
-# You can find your chat ID by messaging @userinfobot or using https://web.telegram.org/. (example 1540239116)
-tg_user_id: ""
