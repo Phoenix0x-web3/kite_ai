@@ -26,6 +26,11 @@ PROJECT_ACTIONS =   [
                     # "6. Bridge",
                     "Back"
                     ]
+ 
+UTILS_ACTIONS = [
+                    "1. Reset files Folder",
+                    "Back"
+                ]
 
 async def choose_action():
     cat_question = [
@@ -35,7 +40,7 @@ async def choose_action():
             choices=[
                 "DB Actions",
                 PROJECT,
-                "Utils",
+                'Utils',
                 "Exit"
             ],
         )
@@ -57,8 +62,8 @@ async def choose_action():
     if category == PROJECT:
         actions = PROJECT_ACTIONS
 
-    if category == "Utils":
-        actions = ["Reset files Folder"]
+    if category == 'Utils':
+        actions = UTILS_ACTIONS
 
     act_question = [
         inquirer.List(
@@ -93,7 +98,7 @@ async def choose_action():
     elif action == "Start Testing Twitter":
         await activity(action=4)
 
-    elif action == "Reset files Folder":
+    elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.") 
         answer = input("Are you sure you want to perform this action? y/N ")
         if answer.lower() == "y":
