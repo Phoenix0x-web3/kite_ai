@@ -46,6 +46,7 @@ class Controller:
         pass
 
     async def onboard_to_portal(self, onchain_faucet: False):
+        now = datetime.now()
         user_info = await self.portal.get_user_info()
 
         if not user_info['onboarding_quiz_completed']:
@@ -54,9 +55,13 @@ class Controller:
                 logger.success(result)
 
         if onchain_faucet:
-            result = await self.portal.on_chain_faucet()
-            if 'Failed' not in result:
-                logger.success(result)
+            if self.wallet.next_faucet_time <= now:
+                result = await self.portal.on_chain_faucet()
+                if 'Failed' not in result:
+                    logger.success(result)
+
+                else:
+                    logger.warning(result)
 
         else:
             if user_info['faucet_claimable']:
@@ -71,7 +76,10 @@ class Controller:
 
                     else: return await self.onboard_to_portal(onchain_faucet=True)
 
-        return result
+        if not result:
+            return 'Skipping Onboard'
+
+        return 'Onboard Completed'
 
 
     async def build_actions(self):
@@ -136,14 +144,16 @@ class Controller:
         if self.wallet.next_faucet_time <= now:
             build_actions.append(lambda: self.portal.on_chain_faucet())
 
-        if not await self.onchain.check_bridge_status():
-            build_actions.append(lambda: self.onchain.controller(action='bridge'))
 
         if self.wallet.next_ai_conversation_time is None or self.wallet.next_ai_conversation_time <= now:
             build_actions += [lambda: self.portal.ai_agent_chat_flow() for _ in range(ai_dialogs_count)]
 
+        ### ONCHAIN BLOCK ####
         if float(balance.Ether) > 0:
             build_actions += [lambda: self.onchain.controller(action='swap') for _ in range(swaps_count)]
+
+            if not await self.onchain.check_bridge_status():
+                build_actions.append(lambda: self.onchain.controller(action='bridge'))
 
         # portal_balance = await self.portal.get_balances()
         #
