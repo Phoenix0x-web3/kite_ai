@@ -12,11 +12,13 @@ from web3 import Web3
 from web3.types import TxParams
 
 from data.config import ABIS_DIR
+from data.promts import Agents
 from data.settings import Settings
 from libs.base import Base
 from libs.eth_async.client import Client
 from libs.eth_async.data.models import RawContract, TokenAmount
 from libs.eth_async.utils.files import read_json
+from modules.chain_api import BlockScout
 from modules.helpers import generate_auth_token
 from utils.browser import Browser
 from utils.captcha.captcha_handler import CloudflareHandler
@@ -78,10 +80,11 @@ class KiteAIPortal(Base):
         self.client = client
         self.wallet = wallet
         self.session = Browser(wallet=wallet)
+        self.onchain_api = BlockScout(client=client, wallet=wallet)
         self.base_headers = {
-            "accept": "application/json, text/plain, */*",
-            "origin": "https://testnet.gokite.ai",
-            "referer": "https://testnet.gokite.ai/",
+            "Accept": "application/json, text/plain, */*",
+            "Origin": "https://testnet.gokite.ai",
+            "Referer": "https://testnet.gokite.ai/",
         }
         self.auth_token = self.wallet.auth_token
         self.eoa_address = self.wallet.eoa_address
@@ -107,8 +110,8 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "content-type": "application/json",
-            "authorization": generate_auth_token(self.client.account.address)
+            "Content-Type": "application/json",
+            "Authorization": generate_auth_token(self.client.account.address)
         }
 
         data = {"eoa": self.client.account.address}
@@ -149,8 +152,8 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "content-type": "application/json",
-            "authorization": f"Bearer {self.wallet.auth_token}"
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.wallet.auth_token}"
             }
 
         if registration:
@@ -197,8 +200,8 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "content-type": "application/json",
-            "authorization": f"Bearer {self.wallet.auth_token}"
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.wallet.auth_token}"
         }
 
         data = {
@@ -220,8 +223,8 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "content-type": "application/json",
-            "authorization": f"Bearer {self.wallet.auth_token}"
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.wallet.auth_token}"
             }
 
         if not self.wallet.auth_token:
@@ -258,9 +261,9 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "content-type": "application/json",
+            "Content-Type": "application/json",
             "Content-Length": "2",
-            "authorization": f"Bearer {self.wallet.auth_token}",
+            "Authorization": f"Bearer {self.wallet.auth_token}",
             "x-recaptcha-token": recaptcha_token
         }
 
@@ -285,7 +288,7 @@ class KiteAIPortal(Base):
         recaptcha_token = await capmoster.get_recaptcha_token(task_id=captcha_task)
 
         headers = {
-            'content-type': 'application/json',
+            'Content-Type': 'application/json',
             'origin': 'https://faucet.gokite.ai',
             'priority': 'u=1, i',
             'referer': 'https://faucet.gokite.ai/',
@@ -313,8 +316,8 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "content-type": "application/json",
-            "authorization": f"Bearer {self.wallet.auth_token}"
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.wallet.auth_token}"
             }
         now = datetime.utcnow()
         date = now.strftime("%Y-%m-%d")
@@ -344,7 +347,7 @@ class KiteAIPortal(Base):
     async def get_balances(self):
         headers = {
             **self.base_headers,
-            "authorization": f"Bearer {self.wallet.auth_token}",
+            "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
         url = f"{self.OZONE_API}/me/balance"
@@ -360,9 +363,9 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "content-type": "application/json",
+            "Content-Type": "application/json",
             "Content-Length": "2",
-            "authorization": f"Bearer {self.wallet.auth_token}",
+            "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
         params = {
@@ -381,7 +384,7 @@ class KiteAIPortal(Base):
     async def get_badges(self):
         headers = {
             **self.base_headers,
-            "authorization": f"Bearer {self.wallet.auth_token}",
+            "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
         url = f"{self.OZONE_API}/badges"
@@ -398,7 +401,7 @@ class KiteAIPortal(Base):
 
         headers = {
             **self.base_headers,
-            "authorization": f"Bearer {self.wallet.auth_token}",
+            "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
         payload = {
@@ -482,3 +485,195 @@ class KiteAIPortal(Base):
             return f"Success Onboarded"
 
         raise Exception(f"Something wrong | {quiz_info}")
+
+    async def generate_ai_request_payload(self, service: str, question: str, answer: str):
+        try:
+            payload = {
+                "address": self.wallet.eoa_address,
+                "input": [
+                    { "type":"text/plain", "value":question }
+                ],
+                "output": [
+                    { "type":"text/plain", "value":answer }
+                ],
+                "service_id": service,
+            }
+
+            return payload
+        except Exception as e:
+            raise Exception(f"Generate Receipt Payload Failed: {str(e)}")
+
+    async def generate_ai_inference_payload(self, service: str, question: str):
+        try:
+            payload = {
+                "service_id": service,
+                "body": {
+                    "message": question,
+                    "stream": True
+                },
+                "stream": True,
+                "subnet": "kite_ai_labs",
+            }
+
+            return payload
+        except Exception as e:
+            raise Exception(f"Generate Inference Payload Failed: {str(e)}")
+
+    async def parse_ai_answer(self, answer):
+        if hasattr(answer, "text") and isinstance(answer.text, str):
+            s = answer.text
+        elif hasattr(answer, "content"):
+            s = answer.content.decode("utf-8", "ignore")
+        elif isinstance(answer, (bytes, bytearray)):
+            s = answer.decode("utf-8", "ignore")
+        else:
+            s = str(answer)
+
+        result = []
+        for raw_line in s.splitlines():
+            line = raw_line.strip()
+            if not line.startswith("data:"):
+                continue
+            if line == "data: [DONE]":
+                break
+
+            try:
+                payload = json.loads(line[len("data:"):].strip())
+                choices = payload.get("choices") or [{}]
+                delta = choices[0].get("delta", {})
+                content = delta.get("content")
+                if content:
+                    result.append(content)
+            except json.JSONDecodeError:
+                continue
+
+        return "".join(result).strip()
+
+    async def parse_ai_answer_(self, answer):
+        result = ""
+        for line in answer.content:
+            line = line.decode("utf-8").strip()
+            if not line.startswith("data:"):
+                continue
+
+            if line == "data: [DONE]":
+                return result.strip()
+
+            try:
+                json_data = json.loads(line[len("data:"):].strip())
+                delta = json_data.get("choices", [{}])[0].get("delta", {})
+                content = delta.get("content")
+                if content:
+                    result += content
+
+            except json.JSONDecodeError:
+                continue
+
+        return result.strip()
+
+    async def submit_receipt(self, service, question, answer):
+        url = f"{self.NEO_API}/v2/submit_receipt"
+
+        payload = await self.generate_ai_request_payload(service, question, answer)
+
+        data = json.dumps(payload)
+
+        headers = {
+            **self.base_headers,
+            "Content-Type": "application/json",
+            #"Content-Length": str(len(data)),
+            "Authorization": f"Bearer {self.wallet.auth_token}",
+        }
+
+        r = await self.session.post(url=url, headers=headers, json=payload)
+        r.raise_for_status()
+
+        return r.json().get('data')
+
+    @async_retry(retries=5)
+    async def get_inference(self, inference_id):
+        url = f"{self.NEO_API}/v1/inference?id={inference_id}"
+
+        headers = {
+            **self.base_headers,
+            "Authorization": f"Bearer {self.wallet.auth_token}",
+        }
+
+        r = await self.session.get(url=url, headers=headers)
+
+        r.raise_for_status()
+        tx_hash = r.json().get("data", {}).get("tx_hash", "")
+
+        if not tx_hash:
+            raise Exception(f'no tx hash')
+
+        return tx_hash
+
+    async def agent_commutication(self, service, question):
+        url = f"{self.OZONE_API}/agent/inference"
+
+        payload = await self.generate_ai_inference_payload(service, question)
+
+        headers = {
+            **self.base_headers,
+            "accept": "text/event-stream",
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.wallet.auth_token}"
+        }
+
+        r = await self.session.post(url=url, headers=headers, json=payload)
+
+        if r.status_code <= 202:
+            answer = await self.parse_ai_answer(answer=r)
+            return answer
+
+        if r.status_code == 429:
+            self.wallet.next_ai_conversation_time = datetime.now() + timedelta(minutes=1441)
+            db.commit()
+
+        raise Exception(f"{self.wallet} | {r.status_code} | {r.text}")
+
+    @controller_log('AI Agent Dialog')
+    async def ai_agent_chat_flow(self):
+        if not self.wallet.auth_token:
+            await self.sign_in()
+
+        await asyncio.sleep(1)
+        agent = random.choice(Agents.agents)
+
+        service = agent["service"]
+        agent_name = agent["agent"]
+        questions: list = agent["questions"]
+
+        q = random.choice(questions)
+        questions.remove(q)
+
+        if agent_name == 'Sherlock':
+
+            tx = await self.onchain_api.get_random_tx()
+            q = q + " " + tx
+
+
+        try:
+            logger.debug(f"{self.wallet} | {self.__module_name__} | Agent: {agent_name} | Question: {q}")
+
+            communicate = await self.agent_commutication(service=service, question=q)
+            logger.debug(f"{self.wallet} | {self.__module_name__} | Agent: {agent_name} | Answer: {communicate}")
+
+            submit_receipt = await self.submit_receipt(service=service, question=q, answer=communicate)
+
+            if not submit_receipt.get('id'):
+                raise Exception(f"Conversation ID is not received")
+
+            await asyncio.sleep(random.randint(3, 5))
+
+            finish = await self.get_inference(inference_id=submit_receipt['id'])
+
+            if finish:
+                return f"Agent: {agent_name} | Conversation Completed tx_hash: {finish}"
+
+        except Exception as r:
+            raise r
+
+
+

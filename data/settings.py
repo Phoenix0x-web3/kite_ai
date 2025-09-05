@@ -35,6 +35,9 @@ class Settings(Singleton):
         self.swaps_count_min = json_data.get("swaps_count", {}).get('min')
         self.swaps_count_max = json_data.get("swaps_count", {}).get('max')
 
+        self.ai_dialogs_count_min = json_data.get("ai_dialogs_count", {}).get('min')
+        self.ai_dialogs_count_max = json_data.get("ai_dialogs_count", {}).get('max')
+
         self.tg_bot_id = json_data.get("tg_bot_id", "")
         self.tg_user_id = json_data.get("tg_user_id", "")
         self.retry = json_data.get("retry", {})

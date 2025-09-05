@@ -26,6 +26,7 @@ class Wallet(Base):
     discord_proxy: Mapped[str] = mapped_column(default=None, nullable=True)
     discord_status: Mapped[str] = mapped_column(default=None, nullable=True)
     next_faucet_time: Mapped[datetime] = mapped_column(default=datetime.now)
+    next_ai_conversation_time: Mapped[datetime] = mapped_column(default=datetime.now)
     auth_token: Mapped[str] = mapped_column(default=None, nullable=True)
     completed: Mapped[bool] = mapped_column(default=False)
 

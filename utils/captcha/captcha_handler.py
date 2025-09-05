@@ -118,7 +118,7 @@ class CloudflareHandler:
                 result = resp.text
                 result = json.loads(result)
                 if result.get('errorId') == 0:
-                    logger.info(f"{self.browser.wallet} created task in CapMonster: {result['taskId']}")
+                    logger.debug(f"{self.browser.wallet} created task in CapMonster: {result['taskId']}")
                     return result['taskId']
                 else:
                     logger.error(f"{self.browser.wallet} CapMonster error: {result.get('errorDescription', 'Unknown error')}")

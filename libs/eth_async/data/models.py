@@ -483,7 +483,7 @@ class Networks:
             tx_type=2,
             coin_symbol='KITE',
             decimals=18,
-            explorer='https://testnet.kitescan.ai/tx/',
+            explorer='https://testnet.kitescan.ai/',
             api=None
         )
 

@@ -57,8 +57,8 @@ swaps_percent:
   max: 15
 # Dialogs with AI count
 
-dialogs_count:
-  min: 1
+ai_dialogs_count:
+  min: 2
   max: 5
 
 # Invite Codes for kiteAi network, example [invite_code1, invite_code2]
