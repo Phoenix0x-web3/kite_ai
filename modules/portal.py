@@ -585,7 +585,7 @@ class KiteAIPortal(Base):
             "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
-        r = await self.session.post(url=url, headers=headers, json=payload)
+        r = await self.session.post(url=url, headers=headers, json=payload, timeout=90)
         r.raise_for_status()
 
         return r.json().get('data')
@@ -599,7 +599,7 @@ class KiteAIPortal(Base):
             "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
-        r = await self.session.get(url=url, headers=headers)
+        r = await self.session.get(url=url, headers=headers, timeout=90)
 
         r.raise_for_status()
         tx_hash = r.json().get("data", {}).get("tx_hash", "")
@@ -621,7 +621,7 @@ class KiteAIPortal(Base):
             "Authorization": f"Bearer {self.wallet.auth_token}"
         }
 
-        r = await self.session.post(url=url, headers=headers, json=payload)
+        r = await self.session.post(url=url, headers=headers, json=payload, timeout=90)
 
         if r.status_code <= 202:
             answer = await self.parse_ai_answer(answer=r)
