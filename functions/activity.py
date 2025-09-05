@@ -46,8 +46,10 @@ async def random_activity_task(wallet):
 
                     if 'Failed' not in status:
                         logger.success(status)
+                    elif 'AI Agent rate limit' in status:
+                        logger.warning(status)
                     else:
-                        logger.exception(status)
+                        logger.error(status)
 
                 except Exception as e:
                     logger.error(e)
