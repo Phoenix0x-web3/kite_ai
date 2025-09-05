@@ -273,9 +273,12 @@ class KiteAIPortal(Base):
 
         url = f"{self.OZONE_API}/blockchain/faucet-transfer"
         r = await self.session.post(url=url, headers=headers, json=json_data, timeout=60)
-        r.raise_for_status()
 
-        return r.json().get('data')
+        if r.status_code <= 202:
+
+            return r.json().get('data')
+
+        raise Exception(f"{r.status_code} | {r.json()}")
 
     @controller_log('Onchain Faucet')
     async def on_chain_faucet(self):
@@ -462,7 +465,7 @@ class KiteAIPortal(Base):
                 await asyncio.sleep(random.randint(3, 9))
                 submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=True,
                                            quiz_id=quiz_id)
-                logger.debug(submit)
+                logger.debug(f"{submit} | {q['content']}")
 
             return f'Success submit daily quest'
         else:
@@ -481,7 +484,7 @@ class KiteAIPortal(Base):
                     finish = True
 
                 submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=finish)
-                logger.debug(submit)
+                logger.debug(f"{submit} | {q['content']}")
                 await asyncio.sleep(random.randint(3, 9))
 
             return f"Success Onboarded"
@@ -645,7 +648,9 @@ class KiteAIPortal(Base):
             await self.sign_in()
 
         await asyncio.sleep(1)
-        agent = random.choice(Agents.agents)
+        agents = Agents.agents
+
+        agent = random.choice(agents)
 
         service = agent["service"]
         agent_name = agent["agent"]
@@ -657,7 +662,9 @@ class KiteAIPortal(Base):
         if agent_name == 'Sherlock':
 
             tx = await self.onchain_api.get_random_tx()
-            q = q + " " + tx
+            if len(tx) > 0:
+                tx = random.choice(tx)
+                q = q + " " + tx
 
         try:
             logger.debug(f"{self.wallet} | {self.__module_name__} | Agent: {agent_name} | Question: {q}")
@@ -677,5 +684,5 @@ class KiteAIPortal(Base):
             if finish:
                 return f"Agent: {agent_name} | Conversation Completed tx_hash: {finish}"
 
-        except Exception as r:
-            raise r
+        except Exception as e:
+            raise Exception(f"Agent{agent_name} | {e}")

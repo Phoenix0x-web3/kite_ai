@@ -448,7 +448,7 @@ class KiteOnchain(Base):
             return f"{self.wallet} | {self.__module_name__} | No balances try to faucet first"
 
         if all(float(value.Ether) == 0 for value in balances.values()):
-            return 'Failed | No balance in all tokens, try to faucet first'
+            return f'{self.wallet} | {self.__module_name__} | Failed | No balance in all tokens, try to faucet first'
 
         from_token = random.choice(tokens)
 

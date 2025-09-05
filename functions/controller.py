@@ -57,11 +57,19 @@ class Controller:
             result = await self.portal.on_chain_faucet()
             if 'Failed' not in result:
                 logger.success(result)
+
         else:
             if user_info['faucet_claimable']:
                 result = await self.portal.faucet()
+
                 if 'Failed' not in result:
                     logger.success(result)
+                    await asyncio.sleep(15, 10)
+                    portal_balance = await self.portal.get_balances()
+                    if portal_balance.get('kite') > 0.01:
+                        result = await self.portal.withdrawal_from_portal(amount=1)
+
+                    else: return await self.onboard_to_portal(onchain_faucet=True)
 
         return result
 
@@ -83,7 +91,7 @@ class Controller:
 
             onboard_actions = [
                 lambda: self.onboard_to_portal(onchain_faucet=True),
-                lambda: self.onboard_to_portal(onchain_faucet=False)
+                #lambda: self.onboard_to_portal(onchain_faucet=False)
                                ]
 
             onboard = random.choice(onboard_actions)
@@ -94,14 +102,13 @@ class Controller:
                 await asyncio.sleep(10)
 
                 if 'Failed' not in onboard:
-                    logger.success(onboard)
                     balance = await self.client.wallet.balance()
 
                 else:
-                    raise Exception(f"{self.wallet} | Controller | {onboard}")
+                    raise Exception(f"Controller | {onboard}")
 
-            except:
-                raise RuntimeError(f"{self.wallet} | Controller | Actions stopped")
+            except Exception as e:
+                raise RuntimeError(f"Controller | Actions stopped | {e} ")
 
         user_info = await self.portal.get_user_info()
 
@@ -132,7 +139,7 @@ class Controller:
         if not await self.onchain.check_bridge_status():
             build_actions.append(lambda: self.onchain.controller(action='bridge'))
 
-        if self.wallet.next_ai_conversation_time <= now:
+        if self.wallet.next_ai_conversation_time is None or self.wallet.next_ai_conversation_time <= now:
             build_actions += [lambda: self.portal.ai_agent_chat_flow() for _ in range(ai_dialogs_count)]
 
         if float(balance.Ether) > 0:

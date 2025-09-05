@@ -147,7 +147,7 @@ class CloudflareHandler:
         }
 
         # Maximum wait time (60 seconds)
-        max_attempts = 5
+        max_attempts = 60
 
         for _ in range(max_attempts):
             try:
