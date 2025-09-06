@@ -656,9 +656,9 @@ class KiteAIPortal(Base):
             await self.sign_in()
 
         await asyncio.sleep(1)
-        agents = Agents.agents
+        promts = Agents()
 
-        agent = random.choice(agents)
+        agent = random.choice(promts.agents)
 
         service = agent["service"]
         agent_name = agent["agent"]
