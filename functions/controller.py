@@ -58,6 +58,7 @@ class Controller:
         if onchain_faucet:
             if self.wallet.next_faucet_time <= now:
                 result = await self.portal.on_chain_faucet()
+
                 if 'Failed' not in result:
                     logger.success(result)
 
@@ -144,7 +145,6 @@ class Controller:
 
         if self.wallet.next_faucet_time <= now:
             build_actions.append(lambda: self.portal.on_chain_faucet())
-
 
         if self.wallet.next_ai_conversation_time is None or self.wallet.next_ai_conversation_time <= now:
             build_actions += [lambda: self.portal.ai_agent_chat_flow() for _ in range(ai_dialogs_count)]

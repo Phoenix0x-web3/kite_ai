@@ -2,7 +2,9 @@ class Promts:
     pass
 
 class Agents:
-    agents = [
+
+    def __init__(self):
+        self.agents = [
        {
             "agent": "Professor",
             "service": "deployment_KNmBm5VWg1HtB6AHXxX0vcyX",
