@@ -533,9 +533,9 @@ class KiteAIPortal(Base):
 
         payload = {
             'amount': amount,
-            'subnet': staking_subnets[agent]
+            'subnet_address': staking_subnets[agent]
         }
-
+        print(payload)
         headers = {
             **self.base_headers,
             "Authorization": f"Bearer {self.wallet.auth_token}",
