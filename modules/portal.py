@@ -501,6 +501,59 @@ class KiteAIPortal(Base):
 
         raise Exception(f"Something wrong | {quiz_info}")
 
+    async def get_stake_amounts(self):
+        url = f"{self.OZONE_API}/me/staked"
+
+        headers = {
+            **self.base_headers,
+            "Authorization": f"Bearer {self.wallet.auth_token}",
+        }
+
+        r = await self.session.get(url=url, headers=headers, timeout=60)
+        r.raise_for_status()
+
+        return r.json().get('data').get('total_staked_amount')
+
+    @controller_log('Portal Staking')
+    async def stake(self, amount: int):
+        staking_subnets = {
+            'Kite': '0x233b43fbe16b3c29df03914bac6a4b5e1616c3f3',
+            'Bitmind': '0xda925c81137dd6e44891cdbd5e84bda3b4f81671',
+            'AI Veronica': '0xb20f6f7d85f657c8cb66a7ee80799cf40f1d3533'
+        }
+
+        agent = random.choice(list(staking_subnets.keys()))
+
+        balances = await self.get_balances()
+        if balances.get('kite') < amount:
+            return 'Failed to Stake, low balance'
+
+
+        url = f"{self.OZONE_API}/subnet/delegate"
+
+        payload = {
+            'amount': amount,
+            'subnet': staking_subnets[agent]
+        }
+
+        headers = {
+            **self.base_headers,
+            "Authorization": f"Bearer {self.wallet.auth_token}",
+        }
+
+        r = await self.session.post(url=url, headers=headers, json=payload, timeout=60)
+
+        if r.status_code == 200:
+
+            res = r.json().get('data').get('tx_hash')
+            return f"Success | Staked to {agent} {amount} KITE | tx_hash: {res}"
+
+        raise Exception(f'Failed to stake | {r.status_code} | {r.text}')
+
+    async def unstake(self):
+        pass
+
+
     async def generate_ai_request_payload(self, service: str, question: str, answer: str):
         try:
             payload = {
@@ -747,3 +800,4 @@ class KiteAIPortal(Base):
         twitter_tasks = [task for task in twitter_tasks if not task['is_completed']]
 
         return twitter_tasks
+

@@ -172,6 +172,7 @@ class Controller:
 
         user_info = await self.portal.get_user_info()
 
+
         if not user_info['onboarding_quiz_completed']:
             actions.append(lambda: self.portal.onboard_flow())
 
@@ -213,6 +214,12 @@ class Controller:
 
             if not await self.onchain.check_bridge_status():
                 build_actions.append(lambda: self.onchain.controller(action='bridge'))
+
+        staking_amounts = await self.portal.get_stake_amounts()
+        if staking_amounts == 0:
+            portal_balance = await self.portal.get_balances()
+            if portal_balance.get('kite') > 0.01:
+                build_actions.append(lambda: self.portal.stake(amount=1))
 
         # portal_balance = await self.portal.get_balances()
         #
