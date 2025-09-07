@@ -172,6 +172,9 @@ class Controller:
 
         user_info = await self.portal.get_user_info()
 
+        if user_info['faucet_claimable']:
+            #todo think about faucet atm
+            build_actions.append(lambda: self.portal.faucet())
 
         if not user_info['onboarding_quiz_completed']:
             actions.append(lambda: self.portal.onboard_flow())
@@ -186,9 +189,6 @@ class Controller:
 
         if not user_info['daily_quiz_completed']:
             build_actions.append(lambda: self.portal.daily_quest_flow())
-
-        if user_info['faucet_claimable']:
-            build_actions.append(lambda: self.portal.faucet())
 
         badges = await self.portal.get_badges()
         badges = [badge for badge in badges if badge["isEligible"]]
