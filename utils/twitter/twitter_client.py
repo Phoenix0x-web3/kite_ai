@@ -446,6 +446,7 @@ class TwitterClient():
             url=callback_url,
             headers=callback_headers,
         )
+
         return TwitterOauthData(auth_token=auth_code, state_verifier_token=state, callback_url=callback_url, callback_response=resp)
 
 

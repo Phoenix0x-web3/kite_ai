@@ -14,6 +14,7 @@ from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
 from utils.db_update import update_points_invites
 from utils.logs_decorator import controller_log
+from utils.twitter.twitter_client import TwitterClient
 
 
 class Controller:
@@ -22,6 +23,7 @@ class Controller:
         self.client = client
         self.wallet = wallet
         self.base = Base(client=client, wallet=wallet)
+        self.twitter = TwitterClient(user=self.wallet)
         self.portal = KiteAIPortal(client=client, wallet=wallet)
         self.onchain = KiteOnchain(client=client, wallet=wallet)
 
@@ -38,9 +40,57 @@ class Controller:
     async def onchain_faucet(self):
         pass
 
+    @controller_log('Bind Twitter')
+    async def bind_twitter(self):
+        auth_url = await self.portal.get_twitter_link()
+
+        try:
+            callback = await self.twitter.connect_twitter_to_site_oauth2(twitter_auth_url=auth_url)
+            await self.twitter.close()
+
+            bind_twitter = await self.portal.bind_twitter(callback=callback)
+
+            if bind_twitter.get('data') == 'ok':
+                return 'Success Bind Twitter'
+
+            raise Exception(f"Failed | {bind_twitter.get('error')}")
+
+        except Exception as e:
+            logger.error(e)
+
+        finally:
+            await self.twitter.close()
+
     @controller_log('Twitter Tasks')
-    async def twitter_tasks(self):
-        pass
+    async def twitter_tasks(self, twitter_tasks: list):
+        results = []
+
+        try:
+            await self.twitter.initialize()
+
+            for task in twitter_tasks:
+                if task['action_type_name'] == 'FOLLOW KITE AI':
+                    name = task['action_type_name']
+                    result = await self.twitter.follow_account(account_name="GoKiteAI")
+
+                    if result:
+                        results.append(f"Success | {name}")
+
+                if "Retweet Kite AI's post" in task['action_type_name']:
+                        name = task['action_type_name']
+                        result = await self.twitter.retweet(tweet_id=1962854326218477760)
+
+                        if result:
+                            results.append(f"Success | {name}")
+
+            return results
+
+        except Exception as e:
+            logger.error(e)
+            return f'Failed | {e}'
+
+        finally:
+            await self.twitter.close()
 
     async def discord_tasks(self):
         pass
@@ -101,7 +151,7 @@ class Controller:
 
             onboard_actions = [
                 lambda: self.onboard_to_portal(onchain_faucet=True),
-                #lambda: self.onboard_to_portal(onchain_faucet=False)
+                lambda: self.onboard_to_portal(onchain_faucet=False)
                                ]
 
             onboard = random.choice(onboard_actions)
@@ -122,14 +172,23 @@ class Controller:
 
         user_info = await self.portal.get_user_info()
 
+        if user_info['faucet_claimable']:
+            #todo think about faucet atm
+            build_actions.append(lambda: self.portal.faucet())
+
         if not user_info['onboarding_quiz_completed']:
             actions.append(lambda: self.portal.onboard_flow())
 
+        if self.wallet.twitter_token:
+            if user_info.get('social_accounts').get('twitter').get('id') == "":
+                    actions.append(lambda: self.bind_twitter())
+            else:
+                twitter_tasks = await self.portal.get_twitter_tasks(user_data=user_info)
+                if twitter_tasks:
+                    build_actions.append(lambda: self.twitter_tasks(twitter_tasks=twitter_tasks))
+
         if not user_info['daily_quiz_completed']:
             build_actions.append(lambda: self.portal.daily_quest_flow())
-
-        if user_info['faucet_claimable']:
-            build_actions.append(lambda: self.portal.faucet())
 
         badges = await self.portal.get_badges()
         badges = [badge for badge in badges if badge["isEligible"]]
@@ -155,6 +214,12 @@ class Controller:
 
             if not await self.onchain.check_bridge_status():
                 build_actions.append(lambda: self.onchain.controller(action='bridge'))
+
+        staking_amounts = await self.portal.get_stake_amounts()
+        if staking_amounts == 0:
+            portal_balance = await self.portal.get_balances()
+            if portal_balance > 0.01:
+                build_actions.append(lambda: self.portal.stake(amount=1))
 
         # portal_balance = await self.portal.get_balances()
         #
