@@ -524,8 +524,8 @@ class KiteAIPortal(Base):
 
         agent = random.choice(list(staking_subnets.keys()))
 
-        balances = await self.get_balances()
-        if balances.get('kite') < amount:
+        balance = await self.get_balances()
+        if balance < amount:
             return 'Failed to Stake, low balance'
 
 

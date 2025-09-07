@@ -218,7 +218,7 @@ class Controller:
         staking_amounts = await self.portal.get_stake_amounts()
         if staking_amounts == 0:
             portal_balance = await self.portal.get_balances()
-            if portal_balance.get('kite') > 0.01:
+            if portal_balance > 0.01:
                 build_actions.append(lambda: self.portal.stake(amount=1))
 
         # portal_balance = await self.portal.get_balances()
