@@ -22,6 +22,12 @@ class TwitterOauthData:
     callback_url: str
     callback_response: Response
 
+@dataclass
+class TwitterStatuses:
+    ok: str = 'OK'
+    bad_token:str = "BAD_TOKEN"
+    suspended: str = 'SUSPENDED'
+    relogin: str = "RELOGIN"
 
 class TwitterClient():
 
@@ -115,11 +121,9 @@ class TwitterClient():
                 twitter.AccountStatus.BAD_TOKEN,
                 twitter.AccountStatus.SUSPENDED,
             ]:
-                #TODO Replace Twitter Token to DB
                 raise BadTwitter
 
             return False
-
 
     async def close(self):
         """Closes the Twitter connection"""

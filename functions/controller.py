@@ -46,6 +46,7 @@ class Controller:
 
         try:
             callback = await self.twitter.connect_twitter_to_site_oauth2(twitter_auth_url=auth_url)
+            print(callback)
             await self.twitter.close()
 
             bind_twitter = await self.portal.bind_twitter(callback=callback)
@@ -216,9 +217,9 @@ class Controller:
                 build_actions.append(lambda: self.onchain.controller(action='bridge'))
 
         staking_amounts = await self.portal.get_stake_amounts()
-        if staking_amounts == 0:
+        if staking_amounts < 2:
             portal_balance = await self.portal.get_balances()
-            if portal_balance > 0.01:
+            if portal_balance > 1.00:
                 build_actions.append(lambda: self.portal.stake(amount=1))
 
         # portal_balance = await self.portal.get_balances()
