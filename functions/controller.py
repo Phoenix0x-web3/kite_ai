@@ -180,16 +180,15 @@ class Controller:
         if not user_info['onboarding_quiz_completed']:
             actions.append(lambda: self.portal.onboard_flow())
 
-        if self.wallet.twitter_token:
-
-            if self.wallet.twitter_status in [None, TwitterStatuses.ok]:
-
-                if user_info.get('social_accounts').get('twitter').get('id') == "":
-                        actions.append(lambda: self.bind_twitter())
-                else:
-                    twitter_tasks = await self.portal.get_twitter_tasks(user_data=user_info)
-                    if twitter_tasks:
-                        build_actions.append(lambda: self.twitter_tasks(twitter_tasks=twitter_tasks))
+        # if self.wallet.twitter_token:
+        #     if self.wallet.twitter_status in [None, TwitterStatuses.ok]:
+        #
+        #         if user_info.get('social_accounts').get('twitter').get('id') == "":
+        #                 actions.append(lambda: self.bind_twitter())
+        #         else:
+        #             twitter_tasks = await self.portal.get_twitter_tasks(user_data=user_info)
+        #             if twitter_tasks:
+        #                 build_actions.append(lambda: self.twitter_tasks(twitter_tasks=twitter_tasks))
 
         if not user_info['daily_quiz_completed']:
             build_actions.append(lambda: self.portal.daily_quest_flow())
