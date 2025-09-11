@@ -7,6 +7,7 @@ from loguru import logger
 from data.settings import Settings
 from libs.eth_async.client import Client
 from libs.base import Base
+from modules.multisig import Safe
 from modules.onchain import KiteOnchain
 from modules.portal import KiteAIPortal
 
@@ -26,6 +27,7 @@ class Controller:
         self.twitter = TwitterClient(user=self.wallet)
         self.portal = KiteAIPortal(client=client, wallet=wallet)
         self.onchain = KiteOnchain(client=client, wallet=wallet)
+        self.safe = Safe(client=client, wallet=wallet)
 
     @controller_log('Update Points')
     async def update_db_by_user_info(self):
@@ -214,6 +216,17 @@ class Controller:
 
             if not await self.onchain.check_bridge_status():
                 build_actions.append(lambda: self.onchain.controller(action='bridge'))
+
+            multisig_wallets = await self.safe.get_safe_addresses()
+
+            if not multisig_wallets:
+                build_actions += [lambda: self.safe.create_account for _ in range(2)]
+
+            else:
+
+                if self.wallet.next_faucet_time <= now:
+                    build_actions += [lambda: self.safe.create_account() for _ in range(2)]
+                    build_actions += [lambda: self.safe.send_native_to_multisig() for _ in range(random.randint(2, 3))]
 
         staking_amounts = await self.portal.get_stake_amounts()
         if staking_amounts == 0:
