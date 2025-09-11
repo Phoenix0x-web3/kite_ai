@@ -158,6 +158,7 @@ class Safe(Base):
             c=initializer,
             s=self.salt_nonce
         ).tuple()
+
         e = factory.encodeABI('createProxyWithNonce', args=data)
 
         tx_params = TxParams(

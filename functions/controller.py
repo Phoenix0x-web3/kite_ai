@@ -220,7 +220,7 @@ class Controller:
             multisig_wallets = await self.safe.get_safe_addresses()
 
             if not multisig_wallets:
-                build_actions += [lambda: self.safe.create_account for _ in range(2)]
+                build_actions += [lambda: self.safe.create_account() for _ in range(2)]
 
             else:
 
