@@ -97,7 +97,7 @@ class Safe(Base):
         self.salt_nonce = int(salt_nonce)
         self.session = Browser(wallet=wallet)
 
-    @async_retry()
+    @async_retry(retries=3, delay=3)
     async def get_safe_addresses(self):
         url = f"{self.BASE}/v1/owners/{self.client.account.address.lower()}/safes"
 
