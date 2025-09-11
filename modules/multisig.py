@@ -91,7 +91,7 @@ class Safe(Base):
 
     BASE = 'https://wallet-client.ash.center'
 
-    def __init__(self, client: Client, wallet: Wallet, salt_nonce: int = 24):
+    def __init__(self, client: Client, wallet: Wallet, salt_nonce: int = 0):
         self.client = client
         self.wallet = wallet
         self.salt_nonce = int(salt_nonce)
@@ -153,10 +153,11 @@ class Safe(Base):
         factory = await self.client.contracts.get(SafeContracts.SAFE_PROXY_FACTORY)
         initializer = await self.encode_initializer()
 
+        salt = random.randint(0, 254)
         data = TxArgs(
             x=SafeContracts.SAFE_L2_V130.address,
             c=initializer,
-            s=self.salt_nonce
+            s=salt
         ).tuple()
 
         e = factory.encodeABI('createProxyWithNonce', args=data)
