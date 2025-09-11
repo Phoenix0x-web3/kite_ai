@@ -35,6 +35,9 @@ class Settings(Singleton):
         self.swaps_count_min = json_data.get("swaps_count", {}).get('min')
         self.swaps_count_max = json_data.get("swaps_count", {}).get('max')
 
+        self.multisig_percent_min = json_data.get("multisig_percent", {}).get('min')
+        self.multisig_percent_max = json_data.get("multisig_percent", {}).get('max')
+
         self.ai_dialogs_count_min = json_data.get("ai_dialogs_count", {}).get('min')
         self.ai_dialogs_count_max = json_data.get("ai_dialogs_count", {}).get('max')
 

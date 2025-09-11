@@ -7,6 +7,7 @@ from loguru import logger
 from data.settings import Settings
 from libs.eth_async.client import Client
 from libs.base import Base
+from modules.multisig import Safe
 from modules.onchain import KiteOnchain
 from modules.portal import KiteAIPortal
 
@@ -14,7 +15,7 @@ from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
 from utils.db_update import update_points_invites
 from utils.logs_decorator import controller_log
-from utils.twitter.twitter_client import TwitterClient
+from utils.twitter.twitter_client import TwitterClient, TwitterStatuses
 
 
 class Controller:
@@ -26,6 +27,7 @@ class Controller:
         self.twitter = TwitterClient(user=self.wallet)
         self.portal = KiteAIPortal(client=client, wallet=wallet)
         self.onchain = KiteOnchain(client=client, wallet=wallet)
+        self.safe = Safe(client=client, wallet=wallet)
 
     @controller_log('Update Points')
     async def update_db_by_user_info(self):
@@ -180,12 +182,13 @@ class Controller:
             actions.append(lambda: self.portal.onboard_flow())
 
         if self.wallet.twitter_token:
-            if user_info.get('social_accounts').get('twitter').get('id') == "":
-                    actions.append(lambda: self.bind_twitter())
-            else:
-                twitter_tasks = await self.portal.get_twitter_tasks(user_data=user_info)
-                if twitter_tasks:
-                    build_actions.append(lambda: self.twitter_tasks(twitter_tasks=twitter_tasks))
+            if self.wallet.twitter_status in [TwitterStatuses.ok, None]:
+                if user_info.get('social_accounts').get('twitter').get('id') == "":
+                        actions.append(lambda: self.bind_twitter())
+                else:
+                    twitter_tasks = await self.portal.get_twitter_tasks(user_data=user_info)
+                    if twitter_tasks:
+                        build_actions.append(lambda: self.twitter_tasks(twitter_tasks=twitter_tasks))
 
         if not user_info['daily_quiz_completed']:
             build_actions.append(lambda: self.portal.daily_quest_flow())
@@ -214,6 +217,18 @@ class Controller:
 
             if not await self.onchain.check_bridge_status():
                 build_actions.append(lambda: self.onchain.controller(action='bridge'))
+
+            multisig_wallets = await self.safe.get_safe_addresses()
+
+            if not multisig_wallets:
+                build_actions += [lambda: self.safe.create_account() for _ in range(2)]
+
+            else:
+
+                if self.wallet.next_faucet_time <= now:
+                    build_actions += [lambda: self.safe.create_account() for _ in range(2)]
+                    build_actions += [lambda: self.safe.send_native_to_multisig() for _ in range(random.randint(2, 3))]
+
 
         staking_amounts = await self.portal.get_stake_amounts()
         if staking_amounts == 0:
