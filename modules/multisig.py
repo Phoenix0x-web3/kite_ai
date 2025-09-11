@@ -122,9 +122,9 @@ class Safe(Base):
         settings = Settings()
 
         percent = random.randint(
-            settings.swaps_percent_min,
-            settings.swaps_percent_max,
-        )
+            settings.multisig_percent_min,
+            settings.multisig_percent_max,
+        ) // 100
 
         balance = await self.client.wallet.balance()
         amount = float(balance.Ether) * percent

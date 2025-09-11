@@ -55,11 +55,16 @@ swaps_count:
 swaps_percent:
   min: 10
   max: 15
-# Dialogs with AI count
 
+# Dialogs with AI count
 ai_dialogs_count:
   min: 2
   max: 5
+
+# Multichain deposit percent
+multisig_percent:
+  min: 3
+  max: 8
 
 # Invite Codes for kiteAi network, example [invite_code1, invite_code2]
 invite_codes: []
