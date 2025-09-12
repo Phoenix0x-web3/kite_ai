@@ -252,6 +252,7 @@ class Controller:
         u = await self.portal.get_user_info()
 
         if u.get('social_accounts').get('discord').get('id') == '':
+
             try:
                 discord = DiscordOAuth(wallet=self.wallet, guild_id=guild_id)
 
@@ -283,6 +284,7 @@ class Controller:
 
     @controller_log('Join GoKiteAi Discord Channel')
     async def join_discord_channel(self):
+
         if self.wallet.discord_status in [None, DiscordStatus.joined]:
             bind = await self.bind_discord()
             if 'Failed' not in bind:
