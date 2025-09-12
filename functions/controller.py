@@ -125,7 +125,7 @@ class Controller:
                     logger.success(result)
                     await asyncio.sleep(15, 10)
                     portal_balance = await self.portal.get_balances()
-                    if portal_balance.get('kite') > 0.01:
+                    if portal_balance > 0.01:
                         result = await self.portal.withdrawal_from_portal(amount=1)
 
                     else: return await self.onboard_to_portal(onchain_faucet=True)
