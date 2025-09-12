@@ -20,7 +20,7 @@ PROJECT = 'Kite AI'
 PROJECT_ACTIONS =   [
                     "1. Random Activity",
                     # "2. Twitter Tasks",
-                    # "3. Discord Tasks",
+                    "2. Discord Tasks",
                     # "4. AI Talk",
                     # "5. Swaps",
                     # "6. Bridge",
@@ -89,11 +89,8 @@ async def choose_action():
     elif action == "1. Random Activity":
         await activity(action=1)
 
-    elif action == "Start Testing Requests":
+    elif action == "2. Discord Tasks":
         await activity(action=2)
-
-    elif action == "Start Testing Web3":
-        await activity(action=3)
 
     elif action == "Start Testing Twitter":
         await activity(action=4)

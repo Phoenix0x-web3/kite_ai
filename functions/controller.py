@@ -14,6 +14,7 @@ from modules.portal import KiteAIPortal
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
 from utils.db_update import update_points_invites
+from utils.discord.discord import DiscordOAuth, DiscordStatus, DiscordInviter
 from utils.logs_decorator import controller_log
 from utils.twitter.twitter_client import TwitterClient, TwitterStatuses
 
@@ -229,7 +230,6 @@ class Controller:
                     build_actions += [lambda: self.safe.create_account() for _ in range(2)]
                     build_actions += [lambda: self.safe.send_native_to_multisig() for _ in range(random.randint(2, 3))]
 
-
         staking_amounts = await self.portal.get_stake_amounts()
         if staking_amounts == 0:
             portal_balance = await self.portal.get_balances()
@@ -245,3 +245,71 @@ class Controller:
         actions += build_actions
         return actions
 
+    @controller_log('Bind Discord')
+    async def bind_discord(self):
+        guild_id = '1298000367283601428'
+
+        u = await self.portal.get_user_info()
+
+        if u.get('social_accounts').get('discord').get('id') == '':
+            try:
+                discord = DiscordOAuth(wallet=self.wallet, guild_id=guild_id)
+
+                discord_link = await self.portal.get_discord_link()
+
+                await asyncio.sleep(random.randint(1, 3))
+
+                oauth_url, state = await discord.start_oauth2(oauth_url=discord_link)
+
+                bind  = await self.portal.bind_discord(callback=oauth_url)
+
+                if bind.get('data'):
+                    logger.debug(bind)
+                    self.wallet.discord_status = DiscordStatus.ok
+
+                    return f'Discord Successfully binded'
+
+                return f'Failed to bind | {bind}'
+
+            except Exception as e:
+                if 'You need to verify your account in order to perform':
+                    self.wallet.discord_status = DiscordStatus.verify
+                    db.commit()
+
+                    raise e
+
+        else:
+            return f"Already binded discord {u.get('social_accounts').get('discord').get('username')}"
+
+    @controller_log('Join GoKiteAi Discord Channel')
+    async def join_discord_channel(self):
+        if self.wallet.discord_status in [None, DiscordStatus.joined]:
+            bind = await self.bind_discord()
+            if 'Failed' not in bind:
+                logger.success(bind)
+
+        if self.wallet.discord_status in [None, DiscordStatus.ok]:
+
+            guild_id = '1298000367283601428'
+
+            try:
+
+                discord_inviter = DiscordInviter(
+                    wallet=self.wallet,
+                    invite_code='gokiteai',
+                    channel_id=guild_id)
+
+                join_to_channel = await discord_inviter.start_accept_discord_invite()
+
+                if 'Failed' not in join_to_channel:
+                    self.wallet.discord_status = DiscordStatus.joined
+                    db.commit()
+                    return 'Success joined GoKiteAI Channel'
+
+                else:
+                    return f'Join Failed | {join_to_channel}'
+
+            except Exception as e:
+                return f"Failed | {e}"
+
+        else: raise Exception(f'Failed | Bad discord token | {self.wallet.discord_status}')

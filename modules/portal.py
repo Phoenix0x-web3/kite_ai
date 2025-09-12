@@ -791,6 +791,49 @@ class KiteAIPortal(Base):
         )
         return r.json()
 
+    async def get_discord_link(self):
+        return f"https://discord.com/api/v9/oauth2/authorize?client_id=1355842034900013246&response_type=code&redirect_uri=https%3A%2F%2Ftestnet.gokite.ai%2Fdiscord&scope=identify&integration_type=0"
+
+
+    async def bind_discord(self, callback: str):
+
+        if not self.wallet.auth_token:
+            await self.sign_in()
+
+        headers = {
+            "referer": 'https://discord.com/'
+        }
+
+        r = await self.session.get(
+            url=callback,
+            headers=headers,
+            allow_redirects = False
+        )
+
+        location = r.headers.get('location')
+
+        r = await self.session.get(
+            url=location
+        )
+
+        query_data = query_to_json(location)
+
+        await asyncio.sleep(1, 3)
+
+        cookies = {'user_session_id': self.wallet.auth_token}
+
+        headers = {
+            **self.base_headers,
+            "referer": f'{self.TESTNET_API}/discord'
+        }
+        r = await self.session.post(
+            url=f'{self.TESTNET_API}/discord?token={query_data.get("token")}',
+            headers = headers,
+            cookies=cookies,
+            json = {},
+        )
+        return r.json()
+
     async def get_twitter_tasks(self, user_data):
         user_data = user_data.get('social_accounts').get('twitter').get('action_types')
         #disabled task

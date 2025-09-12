@@ -3,6 +3,7 @@ import contextlib
 import json
 import random
 import re
+import time
 import uuid
 import zlib
 from typing import Any, Dict, Optional, Tuple, Callable, Awaitable
@@ -25,6 +26,7 @@ DISCORD_SITE_KEY = "a9b5fb07-92ff-493f-86fe-352a2803b3df"
 
 class DiscordStatus:
     ok = "OK"
+    joined = "JOINED"
     bad_token = "BAD"
     duplicate = "DUPLICATE"
     captcha = "CAPTCHA"
@@ -73,6 +75,10 @@ def build_xsuperparams(
         referring_domain_current: str = "discord.com",
         release_channel: str = "stable",
         client_event_source: Optional[str] = None,
+        client_app_state: str = "focused",
+        client_launch_id: str = None,
+        client_heartbeat_session_id: str = None,
+        launch_signature: str = None,
 ) -> str:
     """
     client_build_number hardcoded  432548
@@ -92,6 +98,10 @@ def build_xsuperparams(
         "release_channel": release_channel,
         "client_build_number": 432548,
         "client_event_source": client_event_source,
+        "client_launch_id": client_launch_id,
+        "launch_signature": launch_signature,
+        "client_heartbeat_session_id": client_heartbeat_session_id,
+        "client_app_state": client_app_state,
     }
     return _b64j(payload)
 
@@ -140,7 +150,7 @@ class DiscordInviter:
 
         self.discord_token: str = wallet.discord_token
         self.invite_code = invite_code
-        self.channel = channel_id or "1270276651636232282"
+        self.channel = channel_id
         self.session_id = self._generate_session_id()
         self.timezone = timezone
         self.locale = locale
@@ -165,10 +175,33 @@ class DiscordInviter:
         self.tasks: list[asyncio.Task] = []
 
         self.x_content_properties: Optional[str] = None
+        self._init_launch_artifacts()
+        self._reset_heartbeat_session()
 
     @staticmethod
     def _generate_session_id() -> str:
         return uuid.uuid4().hex
+
+    @staticmethod
+    def _uuid() -> str:
+        return str(uuid.uuid4())
+
+    @staticmethod
+    def _monotonic_ms() -> int:
+
+        return int(time.perf_counter() * 1000)
+
+    def _init_launch_artifacts(self) -> None:
+        # создаём единоразово на запуск (или на первый connect)
+        if not getattr(self, "client_launch_id", None):
+            self.client_launch_id = self._uuid()
+        if not getattr(self, "launch_signature", None):
+            self.launch_signature = self._uuid()
+
+    def _reset_heartbeat_session(self) -> None:
+        # пересоздаём на каждый новый Gateway connect
+        self.client_heartbeat_session_id = self._uuid()
+        self.client_heartbeat_initialization_timestamp = self._monotonic_ms()
 
     def _super_props(self) -> str:
         return build_xsuperparams(
@@ -180,6 +213,10 @@ class DiscordInviter:
             referrer_current="https://discord.com/",
             referring_domain_current="discord.com",
             release_channel="stable",
+            client_launch_id=self.client_launch_id,
+            launch_signature=self.launch_signature,
+            client_heartbeat_session_id=self.client_heartbeat_session_id,
+
         )
 
     def base_headers(self) -> Dict[str, str]:
@@ -232,6 +269,7 @@ class DiscordInviter:
         return wrapper
 
     async def connect(self):
+
         connector_args = {"proxy": self.proxy} if self.proxy else {}
         self.client_session = aiohttp.ClientSession(**connector_args)
         self.ws = await self.client_session.ws_connect(
@@ -279,7 +317,13 @@ class DiscordInviter:
                     "referring_domain_current": "",
                     "release_channel": "stable",
                     "client_build_number": 432548,
-                    "client_event_source": None
+                    "client_event_source": None,
+                    "client_app_state": "focused",
+                    "client_launch_id": self.client_launch_id,
+                    "client_heartbeat_session_id": self.client_heartbeat_session_id,
+                    "launch_signature": self.launch_signature,
+                    "gateway_connect_reasons": "AppSkeleton",
+                    "is_fast_connect": False,
                 },
                 "presence": {
                     "status": "unknown",
@@ -289,8 +333,10 @@ class DiscordInviter:
                 },
                 "compress": False,
                 "client_state": {"guild_versions": {}},
+                "client_heartbeat_initialization_timestamp": self.client_heartbeat_initialization_timestamp,
             },
         }
+
         try:
             await self.ws.send_json(payload)
         except Exception as e:
@@ -356,7 +402,7 @@ class DiscordInviter:
 
             if "You need to verify your account" in r.text:
                 logger.error(f"{self.wallet} | {self.__module_name__} | Account needs verification (Email code etc).")
-                self.wallet.discord_status = DiscordStatus.bad_token
+                self.wallet.discord_status = DiscordStatus.verify
                 db.commit()
                 return "verification_failed", "", False
 
@@ -397,11 +443,15 @@ class DiscordInviter:
                 user_agent=self.async_session.user_agent,
                 system_locale=self.locale,
                 os_version="10.15.7",
+                client_launch_id=self.client_launch_id,
+                launch_signature=self.launch_signature,
+                client_heartbeat_session_id=self.client_heartbeat_session_id,
             ),
             "host": "discord.com",
             "authorization": self.discord_token,
         }
-        # print('headers', json.dumps(headers, indent=4))
+
+        #print('headers', json.dumps(headers, indent=4))
 
         body = {'session_id': self.session_id}
         r = await self.async_session.post(
@@ -419,7 +469,6 @@ class DiscordInviter:
                     return True, f'{self.wallet} | {self.__module_name__} | Joined the server!'
             except Exception:
                 pass
-
 
         need_captcha = False
         captcha_rqdata = captcha_rqtoken = captcha_session_id = None
@@ -865,13 +914,15 @@ class DiscordOAuth:
         )
 
         if r2.status_code <= 202:
+
             try:
                 loc = r2.json().get("location")
+
                 if loc:
-                    return loc, post_params['state']
+                    return loc, post_params['state'] if post_params.get('state') else None
 
             except Exception:
                 pass
 
-        logger.error(f'[OAuth] Status code {r2.status_code}. Response: {r2.text}')
+        logger.exception(f'[OAuth] Status code {r2.status_code}. Response: {r2.text}')
         raise Exception(f'Status code {r2.status_code}. Response: {r2.text}')
