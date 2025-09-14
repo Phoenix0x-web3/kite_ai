@@ -1,0 +1,2 @@
+PROJECT_NAME = "Kite AI"
+PROJECT_SHORT_NAME = "kite"

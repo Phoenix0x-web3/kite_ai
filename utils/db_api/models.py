@@ -5,6 +5,7 @@ from sqlalchemy import DateTime
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import Mapped, mapped_column
 from data.settings import Settings
+from data.constants import PROJECT_SHORT_NAME
 
 class Base(DeclarativeBase):
     pass
@@ -31,7 +32,7 @@ class Wallet(Base):
     completed: Mapped[bool] = mapped_column(default=False)
 
     def __repr__(self):
-        if Settings().show_wallet_address_log:
-            return f'[{self.id}][{self.address}]'
-        return f'[{self.id}]'
+        if Settings().show_wallet_address_logs:
+            return f'[{PROJECT_SHORT_NAME} | {self.id} | {self.address}]'
+        return f'[{PROJECT_SHORT_NAME} | {self.id}]'
         
