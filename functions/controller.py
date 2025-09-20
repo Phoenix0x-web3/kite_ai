@@ -231,10 +231,20 @@ class Controller:
                     build_actions += [lambda: self.safe.send_native_to_multisig() for _ in range(random.randint(2, 3))]
 
         staking_amounts = await self.portal.get_stake_amounts()
-        if staking_amounts == 0:
+
+        if staking_amounts <= 2:
             portal_balance = await self.portal.get_balances()
-            if portal_balance > 0.01:
+
+            if portal_balance > 1.01:
                 build_actions.append(lambda: self.portal.stake(amount=1))
+
+            chance_to_claim_stake_rewards = random.randint(1, 10)
+            if chance_to_claim_stake_rewards == 5:
+                staked_amounts = await self.portal.check_staked_balance()
+
+                if len(staked_amounts) > 0:
+                    agent = staked_amounts
+                    build_actions.append(lambda: self.portal.claim_staking_rewards(agent=agent))
 
         # portal_balance = await self.portal.get_balances()
         #
