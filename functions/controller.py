@@ -72,19 +72,20 @@ class Controller:
             await self.twitter.initialize()
 
             for task in twitter_tasks:
+                await asyncio.sleep(random.randint(5,10))
+
                 if task['action_type_name'] == 'FOLLOW KITE AI':
                     name = task['action_type_name']
                     result = await self.twitter.follow_account(account_name="GoKiteAI")
-
                     if result:
-                        results.append(f"Success | {name}")
+                        results.append(f"Success | {result} |{name}")
 
                 if "Retweet Kite AI's post" in task['action_type_name']:
                         name = task['action_type_name']
                         result = await self.twitter.retweet(tweet_id=1962854326218477760)
 
                         if result:
-                            results.append(f"Success | {name}")
+                            results.append(f"Success | {result} | {name}")
 
             return results
 
@@ -325,3 +326,4 @@ class Controller:
                 return f"Failed | {e}"
 
         else: raise Exception(f'Failed | Bad discord token | {self.wallet.discord_status}')
+
