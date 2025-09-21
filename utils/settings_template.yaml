@@ -12,7 +12,7 @@ retry: 3
 #BY DEFAULT: [0,0] - all wallets
 #Example: [2, 6] will run wallets 2,3,4,5,6
 #[4,4] will run only wallet 4
-range_wallets_to_run: [1,6]
+range_wallets_to_run: [0,0]
 
 # Whether to shuffle the list of wallets before processing
 shuffle_wallets: true
