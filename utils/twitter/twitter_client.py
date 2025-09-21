@@ -199,20 +199,21 @@ class TwitterClient():
         is_following = await self._check_if_following(user_id=user.id)
 
         if is_following:
-            logger.info(f"{self.user} Already following @{clean_account_name}")
-            return True
+            #logger.info(f"{self.user} Already following @{clean_account_name}")
+            return f"Already following @{clean_account_name}"
 
         # Follow the user
         is_followed = await self.twitter_client.follow(user.id)
 
         if is_followed:
-            logger.success(f"{self.user} Followed @{clean_account_name}")
-            return True
+            #logger.success(f"{self.user} Followed @{clean_account_name}")
+            return f"{self.user} Followed @{clean_account_name}"
         else:
-            logger.warning(
-                f"{self.user} Failed to follow @{clean_account_name}"
-            )
-            return False
+            # logger.warning(
+            #     f"{self.user} Failed to follow @{clean_account_name}"
+            # )
+            # return False
+            raise Exception(f"{self.user} Failed to follow @{clean_account_name}")
 
 
     async def _check_if_following(self, user_id: int) -> bool:
@@ -334,8 +335,6 @@ class TwitterClient():
         else:
             logger.warning(f"{self.user} Failed to like")
             return False
-
-
 
 
     async def connect_twitter_to_site_oauth(self, twitter_auth_url:str) -> TwitterOauthData:

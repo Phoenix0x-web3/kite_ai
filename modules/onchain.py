@@ -514,7 +514,6 @@ class KiteOnchain(Base):
         else:
             c = await self.client.contracts.get(BRIDGE_ROUTER)
 
-
         if not is_native:
             ok = await self.approve_interface(
                 token_address=token.address,

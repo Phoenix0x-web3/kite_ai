@@ -64,6 +64,29 @@ ACCOUNT_FACTORY = RawContract(
 
 salt  = "0x4b6f5b36bb7706150b17e2eecb6e602b1b90b94a4bf355df57466626a5cb897b"
 
+STAKING_SUBNETS = {
+    'Kite':
+        {
+            'address': '0x233b43fbe16b3c29df03914bac6a4b5e1616c3f3',
+            'id': 496
+        },
+    'Bitmind':
+        {
+            'address': '0xda925c81137dd6e44891cdbd5e84bda3b4f81671',
+            'id': 702
+        },
+    'AI Veronica':
+        {
+            'address': '0xb20f6f7d85f657c8cb66a7ee80799cf40f1d3533',
+            'id': 699
+        },
+    'Bitte':
+        {
+            'address': '0x72ce733c9974b180bed20343bd1024a3f855ec0c',
+            'id': 701
+        }
+}
+
 class KiteAIPortal(Base):
     __module_name__ = "Kite AI API"
 
@@ -148,6 +171,7 @@ class KiteAIPortal(Base):
 
     @async_retry(retries=3, delay=3)
     async def get_user_info(self, registration=False) -> dict:
+
         if not self.wallet.auth_token:
             await self.sign_in()
 
@@ -516,13 +540,9 @@ class KiteAIPortal(Base):
 
     @controller_log('Portal Staking')
     async def stake(self, amount: int):
-        staking_subnets = {
-            'Kite': '0x233b43fbe16b3c29df03914bac6a4b5e1616c3f3',
-            'Bitmind': '0xda925c81137dd6e44891cdbd5e84bda3b4f81671',
-            'AI Veronica': '0xb20f6f7d85f657c8cb66a7ee80799cf40f1d3533'
-        }
 
-        agent = random.choice(list(staking_subnets.keys()))
+
+        agent = random.choice(list(STAKING_SUBNETS.keys()))
 
         balance = await self.get_balances()
         if balance < amount:
@@ -533,7 +553,7 @@ class KiteAIPortal(Base):
 
         payload = {
             'amount': amount,
-            'subnet_address': staking_subnets[agent]
+            'subnet_address': STAKING_SUBNETS[agent]['address']
         }
         headers = {
             **self.base_headers,
@@ -549,9 +569,56 @@ class KiteAIPortal(Base):
 
         raise Exception(f'Failed to stake | {r.status_code} | {r.text}')
 
+    async def check_staked_balance(self):
+        result = []
+
+        if not self.wallet.auth_token:
+            await self.sign_in()
+
+        for agent in STAKING_SUBNETS:
+            id = STAKING_SUBNETS[agent]['id']
+
+            url = f"{self.OZONE_API}/subnet/{id}/staked-info?id={id}"
+
+            headers = {
+                **self.base_headers,
+                "Authorization": f"Bearer {self.wallet.auth_token}",
+            }
+
+            r = await self.session.get(url=url, headers=headers, timeout=60)
+
+            if r.status_code == 200:
+                amount = r.json().get('data').get('my_staked_amount')
+                if amount > 0:
+                    result.append(agent)
+
+            await asyncio.sleep(3, 10)
+
+        return result
+    @controller_log('Claim Staking Rewards')
+    async def claim_staking_rewards(self, agent):
+        url = f"{self.OZONE_API}/subnet/claim-rewards"
+
+        payload = {
+            'subnet_address': STAKING_SUBNETS[agent]['address']
+        }
+
+        headers = {
+            **self.base_headers,
+            "Authorization": f"Bearer {self.wallet.auth_token}",
+        }
+
+        r = await self.session.post(url=url, headers=headers, json=payload, timeout=60)
+
+        if r.status_code == 200:
+            tx_hash = r.json().get('data').get('tx_hash')
+            claim_amount = r.json().get('data').get('claim_amount')
+            return f"Success | Claimed {claim_amount} KITE from {agent} subnet| tx_hash: {tx_hash}"
+
+        raise Exception(f'Failed to claim | {r.status_code} | {r.text}')
+
     async def unstake(self):
         pass
-
 
     async def generate_ai_request_payload(self, service: str, question: str, answer: str):
         try:
@@ -788,6 +855,49 @@ class KiteAIPortal(Base):
             cookies=cookies,
             json = {},
 
+        )
+        return r.json()
+
+    async def get_discord_link(self):
+        return f"https://discord.com/api/v9/oauth2/authorize?client_id=1355842034900013246&response_type=code&redirect_uri=https%3A%2F%2Ftestnet.gokite.ai%2Fdiscord&scope=identify&integration_type=0"
+
+
+    async def bind_discord(self, callback: str):
+
+        if not self.wallet.auth_token:
+            await self.sign_in()
+
+        headers = {
+            "referer": 'https://discord.com/'
+        }
+
+        r = await self.session.get(
+            url=callback,
+            headers=headers,
+            allow_redirects = False
+        )
+
+        location = r.headers.get('location')
+
+        r = await self.session.get(
+            url=location
+        )
+
+        query_data = query_to_json(location)
+
+        await asyncio.sleep(1, 3)
+
+        cookies = {'user_session_id': self.wallet.auth_token}
+
+        headers = {
+            **self.base_headers,
+            "referer": f'{self.TESTNET_API}/discord'
+        }
+        r = await self.session.post(
+            url=f'{self.TESTNET_API}/discord?token={query_data.get("token")}',
+            headers = headers,
+            cookies=cookies,
+            json = {},
         )
         return r.json()
 
