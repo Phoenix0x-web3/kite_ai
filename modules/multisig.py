@@ -97,11 +97,14 @@ class Safe(Base):
         self.salt_nonce = int(salt_nonce)
         self.session = Browser(wallet=wallet)
 
-    @async_retry(retries=3, delay=3)
+    @async_retry(retries=3, delay=5)
     async def get_safe_addresses(self):
         url = f"{self.BASE}/v1/owners/{self.client.account.address.lower()}/safes"
 
         r = await self.session.get(url=url)
+
+        if r.json().get('code') == 429:
+            return 'Failed'
 
         return r.json().get('2368')
 
@@ -112,12 +115,19 @@ class Safe(Base):
 
         return r.json()
 
-    @controller_log('Deposit to Multisig')
-    async def send_native_to_multisig(self):
-        wallets = await self.get_safe_addresses()
+    async def get_safe_info(self, address: str):
+        url = f"{self.BASE}/v1/chains/2368/safes/{address}"
 
-        if not wallets:
-            return await self.create_account()
+        r = await self.session.get(url=url)
+
+        return r.json()
+
+    @controller_log('Deposit to Multisig')
+    async def send_native_to_multisig(self, address):
+        # wallets = await self.get_safe_addresses()
+        #
+        # if not wallets:
+        #     return await self.create_account()
 
         settings = Settings()
 
@@ -129,8 +139,8 @@ class Safe(Base):
         balance = await self.client.wallet.balance()
         amount = float(balance.Ether) * percent
 
-        receiver = random.choice(wallets)
-        return await self.send_eth(to_address=receiver, amount=TokenAmount(amount=amount))
+        #receiver = random.choice(wallets)
+        return await self.send_eth(to_address=Web3.to_checksum_address(address), amount=TokenAmount(amount=amount))
 
     async def encode_initializer(self) -> bytes:
         safe = await self.client.contracts.get(SafeContracts.SAFE_L2_V130)
