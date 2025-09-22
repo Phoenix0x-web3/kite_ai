@@ -421,7 +421,7 @@ class KiteOnchain(Base):
 
         return "Failed | Swap"
 
-    async def current_balances(self, tokens: list) -> dict:
+    async def  current_balances(self, tokens: list) -> dict:
         balances = {}
 
         for token in tokens:
@@ -430,8 +430,8 @@ class KiteOnchain(Base):
             else:
                 balance = await self.client.wallet.balance(token=token)
 
-
-            balances[token.title] = balance
+            if balance.Ether > 0.1:
+                balances[token] = balance
 
         return balances
 
@@ -450,12 +450,9 @@ class KiteOnchain(Base):
         if all(float(value.Ether) == 0 for value in balances.values()):
             return f'{self.wallet} | {self.__module_name__} | Failed | No balance in all tokens, try to faucet first'
 
-        from_token = random.choice(tokens)
+        from_token = random.choice(list(balances.keys()))
 
-        while balances[from_token.title].Ether == 0:
-            from_token = random.choice(tokens)
-
-        amount = balances[from_token.title]
+        amount = balances[from_token]
 
         settings = Settings()
 

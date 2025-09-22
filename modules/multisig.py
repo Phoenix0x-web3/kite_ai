@@ -97,16 +97,26 @@ class Safe(Base):
         self.salt_nonce = int(salt_nonce)
         self.session = Browser(wallet=wallet)
 
-    @async_retry(retries=3, delay=3)
+    @async_retry(retries=3, delay=5)
     async def get_safe_addresses(self):
         url = f"{self.BASE}/v1/owners/{self.client.account.address.lower()}/safes"
 
         r = await self.session.get(url=url)
 
+        if r.json().get('code') == 429:
+            return 'Failed'
+
         return r.json().get('2368')
 
     async def get_safe_nonce(self, address: str):
         url = f"{self.BASE}/v1/chains/2368/safes/{address}/nonces"
+
+        r = await self.session.get(url=url)
+
+        return r.json()
+
+    async def get_safe_info(self, address: str):
+        url = f"{self.BASE}/v1/chains/2368/safes/{address}"
 
         r = await self.session.get(url=url)
 

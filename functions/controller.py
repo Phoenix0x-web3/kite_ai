@@ -222,11 +222,10 @@ class Controller:
 
             multisig_wallets = await self.safe.get_safe_addresses()
 
-            if not multisig_wallets:
+            if 'Failed' not in multisig_wallets and not multisig_wallets:
                 build_actions += [lambda: self.safe.create_account() for _ in range(2)]
 
             else:
-
                 if self.wallet.next_faucet_time <= now:
                     build_actions += [lambda: self.safe.create_account() for _ in range(2)]
                     build_actions += [lambda: self.safe.send_native_to_multisig() for _ in range(random.randint(2, 3))]
