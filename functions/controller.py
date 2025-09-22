@@ -222,15 +222,17 @@ class Controller:
 
             multisig_wallets = await self.safe.get_safe_addresses()
 
-            if 'Failed' not in multisig_wallets and not multisig_wallets:
-                build_actions += [lambda: self.safe.create_account() for _ in range(2)]
+            if 'Failed' not in multisig_wallets:
 
-            else:
-                if self.wallet.next_faucet_time <= now:
+                if not multisig_wallets:
                     build_actions += [lambda: self.safe.create_account() for _ in range(2)]
-                    build_actions += [lambda: self.safe.send_native_to_multisig(
-                        random.choice(multisig_wallets)
-                    ) for _ in range(random.randint(2, 3))]
+
+                else:
+                    if self.wallet.next_faucet_time <= now:
+                        build_actions += [lambda: self.safe.create_account() for _ in range(2)]
+                        build_actions += [lambda: self.safe.send_native_to_multisig(
+                            random.choice(multisig_wallets)
+                        ) for _ in range(random.randint(2, 3))]
 
         staking_amounts = await self.portal.get_stake_amounts()
 
