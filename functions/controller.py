@@ -36,9 +36,10 @@ class Controller:
 
         total_points = user_data.get('profile').get('total_xp_points')
         invite_code = user_data.get('profile').get('referral_code')
+        rank = user_data.get('profile').get('rank')
 
-        logger.info(f"{self.wallet} | Total Points: [{total_points}] | Invite Code: [{invite_code}]")
-        return await update_points_invites(self.wallet.private_key, total_points, invite_code)
+        logger.info(f"{self.wallet} | Total Points: [{total_points}] | Invite Code: [{invite_code}] | Rank: [{rank}]")
+        return await update_points_invites(self.wallet.private_key, total_points, invite_code, rank)
 
     async def onchain_faucet(self):
         pass
