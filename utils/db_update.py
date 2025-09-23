@@ -63,12 +63,13 @@ async def update_next_action_time(private_key: str, seconds: int) -> bool:
     except BaseException:
         return False
 
-async def update_points_invites(private_key: str, points: int, invite_code : str) -> bool:
+async def update_points_invites(private_key: str, points: int, invite_code : str, rank: str) -> bool:
     try:
         wallet = get_wallet_by_private_key(private_key=private_key)
         wallet.points = points
         wallet.invite_code = invite_code
-        
+        wallet.rank = rank
+
         async with LOCK:
             db.commit()
         return True
