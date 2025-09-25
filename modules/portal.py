@@ -629,7 +629,6 @@ class KiteAIPortal(Base):
 
         payload = await self.generate_ai_request_payload(service, question, answer)
 
-
         headers = {
             **self.base_headers,
             "Content-Type": "application/json",
