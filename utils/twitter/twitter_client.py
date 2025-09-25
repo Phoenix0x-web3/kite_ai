@@ -1,21 +1,23 @@
-import copy
-from dataclasses import dataclass
-from curl_cffi.requests import Response
 import urllib.parse
-from typing import Optional, Any, Tuple, Dict
+from dataclasses import dataclass
+from typing import Any, Optional
 
-from libs.twitter.errors import AccountSuspended, BadAccountToken, AccountLocked, AccountNotFound
-from utils.browser import Browser
+from curl_cffi.requests import Response
 from loguru import logger
-import libs.twitter as twitter
-from libs.twitter.utils import remove_at_sign
-from utils.db_api.models import Wallet
-from utils.db_api.wallet_api import update_twitter_token, db
-import libs.baseAsyncSession as BaseAsyncSession
 
-#TODO Move to Exception file
+import libs.baseAsyncSession as BaseAsyncSession
+import libs.twitter as twitter
+from libs.twitter.errors import AccountLocked, AccountNotFound, AccountSuspended, BadAccountToken
+from libs.twitter.utils import remove_at_sign
+from utils.browser import Browser
+from utils.db_api.models import Wallet
+from utils.db_api.wallet_api import db, update_twitter_token
+
+
+# TODO Move to Exception file
 class BadTwitter(Exception):
     pass
+
 
 @dataclass
 class TwitterOauthData:
@@ -24,17 +26,18 @@ class TwitterOauthData:
     callback_url: str
     callback_response: Response
 
+
 @dataclass
 class TwitterStatuses:
-    ok: str = 'OK'
-    bad_token:str = "BAD_TOKEN"
-    suspended: str = 'SUSPENDED'
+    ok: str = "OK"
+    bad_token: str = "BAD_TOKEN"
+    suspended: str = "SUSPENDED"
     relogin: str = "RELOGIN"
     locked: str = "LOCKED"
     not_found: str = "NOT FOUND"
 
-class TwitterClient():
 
+class TwitterClient:
     def __init__(
         self,
         user: Wallet,
@@ -43,7 +46,7 @@ class TwitterClient():
         twitter_password: str | None = None,
         totp_secret: str | None = None,
         ct0: str | None = None,
-        email: str | None = None
+        email: str | None = None,
     ):
         """
         Initialize Twitter client
@@ -66,7 +69,7 @@ class TwitterClient():
             password=twitter_password,
             totp_secret=totp_secret,
             ct0=ct0,
-            email=email
+            email=email,
         )
 
         # Twitter client configuration
@@ -74,7 +77,7 @@ class TwitterClient():
             "wait_on_rate_limit": True,
             "auto_relogin": False,
             "update_account_info_on_startup": True,
-            #TODO: Import CAPMONSTER_API_KEY
+            # TODO: Import CAPMONSTER_API_KEY
             "capsolver_api_key": "CAPMONSTER_API_KEY",
         }
 
@@ -99,9 +102,10 @@ class TwitterClient():
         """
         # Create Twitter client
         self.twitter_client = twitter.Client(
-            self.twitter_account, **self.client_config,
+            self.twitter_account,
+            **self.client_config,
             headers=BaseAsyncSession.FINGERPRINT_DEFAULT.get("headers", {}),
-            impersonate=BaseAsyncSession.FINGERPRINT_DEFAULT.get("impersonate", "chrome136")
+            impersonate=BaseAsyncSession.FINGERPRINT_DEFAULT.get("impersonate", "chrome136"),
         )
 
         # Establish connection
@@ -112,29 +116,28 @@ class TwitterClient():
             await self.twitter_client.establish_status()
 
             if self.twitter_account.status == twitter.AccountStatus.GOOD:
-
                 logger.success(f"{self.user} Twitter client initialized")
                 update_twitter_token(private_key=self.user.private_key, updated_token=self.twitter_account.auth_token)
 
                 self.user.twitter_status = TwitterStatuses.ok
                 return True
 
-        except AccountSuspended as e:
+        except AccountSuspended:
             self.user.twitter_status = TwitterStatuses.suspended
             logger.error(f"{self.user} | Twitter Suspended, try to reauth manually")
             return False
 
-        except BadAccountToken as e:
+        except BadAccountToken:
             self.user.twitter_status = TwitterStatuses.relogin
             logger.error(f"{self.user} | Twitter BadToken, try to reauth manually")
             return False
 
-        except AccountLocked as e:
+        except AccountLocked:
             self.user.twitter_status = TwitterStatuses.locked
             logger.error(f"{self.user} | Twitter Locked, replace twitter token")
             return False
 
-        except AccountNotFound as e:
+        except AccountNotFound:
             self.user.twitter_status = TwitterStatuses.not_found
             logger.error(f"{self.user} | Twitter Not Found, replace twitter token")
             return False
@@ -150,9 +153,7 @@ class TwitterClient():
                 self.twitter_client = None
                 logger.debug(f"{self.user} Twitter client closed")
             except Exception as e:
-                logger.error(
-                    f"{self.user} Error closing Twitter client: {str(e)}"
-                )
+                logger.error(f"{self.user} Error closing Twitter client: {str(e)}")
 
     async def __aenter__(self):
         """Context manager for entering"""
@@ -163,9 +164,7 @@ class TwitterClient():
         """Context manager for exiting"""
         await self.close()
 
-    async def follow_account(
-        self, account_name: str
-    ) -> bool:
+    async def follow_account(self, account_name: str) -> bool:
         """
         Follows the specified Twitter account
 
@@ -185,28 +184,24 @@ class TwitterClient():
         clean_account_name = remove_at_sign(account_name)
 
         # Get user by username
-        user = await self.twitter_client.request_user_by_username(
-            clean_account_name
-        )
+        user = await self.twitter_client.request_user_by_username(clean_account_name)
 
         if not user or not user.id:
-            logger.error(
-                f"{self.user} Could not find user @{clean_account_name}"
-            )
+            logger.error(f"{self.user} Could not find user @{clean_account_name}")
             return False
 
         # Check if already following the user
         is_following = await self._check_if_following(user_id=user.id)
 
         if is_following:
-            #logger.info(f"{self.user} Already following @{clean_account_name}")
+            # logger.info(f"{self.user} Already following @{clean_account_name}")
             return f"Already following @{clean_account_name}"
 
         # Follow the user
         is_followed = await self.twitter_client.follow(user.id)
 
         if is_followed:
-            #logger.success(f"{self.user} Followed @{clean_account_name}")
+            # logger.success(f"{self.user} Followed @{clean_account_name}")
             return f"{self.user} Followed @{clean_account_name}"
         else:
             # logger.warning(
@@ -214,7 +209,6 @@ class TwitterClient():
             # )
             # return False
             raise Exception(f"{self.user} Failed to follow @{clean_account_name}")
-
 
     async def _check_if_following(self, user_id: int) -> bool:
         """
@@ -257,7 +251,6 @@ class TwitterClient():
         else:
             logger.warning(f"{self.user} Failed to post tweet")
             return None
-
 
     async def retweet(self, tweet_id: int) -> bool:
         """
@@ -336,8 +329,7 @@ class TwitterClient():
             logger.warning(f"{self.user} Failed to like")
             return False
 
-
-    async def connect_twitter_to_site_oauth(self, twitter_auth_url:str) -> TwitterOauthData:
+    async def connect_twitter_to_site_oauth(self, twitter_auth_url: str) -> TwitterOauthData:
         """
         Connects Twitter to Site using oauth
 
@@ -359,12 +351,10 @@ class TwitterClient():
         # Extract required parameters
         oauth_token = query_params.get("oauth_token", [""])[0]
 
-        auth_code,redirect_url  = await self.twitter_client.oauth(oauth_token=oauth_token)
+        auth_code, redirect_url = await self.twitter_client.oauth(oauth_token=oauth_token)
 
         if not auth_code:
-            logger.error(
-                f"{self.user} Failed to obtain authorization code from Twitter"
-            )
+            logger.error(f"{self.user} Failed to obtain authorization code from Twitter")
             raise Exception("Not auth code")
 
         parsed_url = urllib.parse.urlparse(redirect_url)
@@ -376,11 +366,10 @@ class TwitterClient():
 
         logger.debug(redirect_url)
 
-
         callback_headers = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            'Accept-Encoding': 'gzip, deflate',
-            'Connection': 'keep-alive',
+            "Accept-Encoding": "gzip, deflate",
+            "Connection": "keep-alive",
             "Referer": "https://x.com/",
             "Upgrade-Insecure-Requests": "1",
             "Sec-Fetch-Dest": "document",
@@ -394,10 +383,11 @@ class TwitterClient():
             timeout=30,
         )
 
-        return TwitterOauthData(auth_token=oauth_token, state_verifier_token=oauth_verifer, callback_url=redirect_url, callback_response=resp)
+        return TwitterOauthData(
+            auth_token=oauth_token, state_verifier_token=oauth_verifer, callback_url=redirect_url, callback_response=resp
+        )
 
-
-    async def connect_twitter_to_site_oauth2(self, twitter_auth_url:str) -> TwitterOauthData:
+    async def connect_twitter_to_site_oauth2(self, twitter_auth_url: str) -> TwitterOauthData:
         """
         Connects Twitter to Site using oauth2
 
@@ -418,9 +408,7 @@ class TwitterClient():
 
         state = query_params.get("state", [""])[0]
         code_challenge = query_params.get("code_challenge", [""])[0]
-        client_id = query_params.get(
-            "client_id", [""]
-        )[0]
+        client_id = query_params.get("client_id", [""])[0]
         redirect_uri = query_params.get(
             "redirect_uri",
             [""],
@@ -439,22 +427,20 @@ class TwitterClient():
             "scope": scope,
             "state": state,
             "code_challenge": code_challenge,
-            "code_challenge_method": code_challenge_method
+            "code_challenge_method": code_challenge_method,
         }
 
         auth_code = await self.twitter_client.oauth2(**oauth2_data)
 
         if not auth_code:
-            logger.error(
-                f"{self.user} Failed to obtain authorization code from Twitter"
-            )
+            logger.error(f"{self.user} Failed to obtain authorization code from Twitter")
             raise Exception("Not auth code")
 
         callback_url = f"{redirect_uri}?state={state}&code={auth_code}"
 
         callback_headers = {
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-            'Accept-Encoding': 'gzip, deflate',
+            "Accept-Encoding": "gzip, deflate",
             "Referer": "https://x.com/",
             "Upgrade-Insecure-Requests": "1",
             "Sec-Fetch-Dest": "document",
@@ -468,5 +454,3 @@ class TwitterClient():
         )
 
         return TwitterOauthData(auth_token=auth_code, state_verifier_token=state, callback_url=callback_url, callback_response=resp)
-
-
