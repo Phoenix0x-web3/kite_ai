@@ -1,30 +1,24 @@
 import asyncio
 import json
 import random
-import time
-from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any, Dict, Optional, Union
+from typing import Union
 
-from eth_abi.abi import encode as abi_encode
 from loguru import logger
 from web3 import Web3
-from web3.types import TxParams
 
-from data.config import ABIS_DIR
 from data.promts import Agents
 from data.settings import Settings
 from libs.base import Base
 from libs.eth_async.client import Client
-from libs.eth_async.data.models import RawContract, TokenAmount
-from libs.eth_async.utils.files import read_json
+from libs.eth_async.data.models import RawContract
 from modules.chain_api import BlockScout
 from modules.helpers import generate_auth_token
 from utils.browser import Browser
 from utils.captcha.captcha_handler import CloudflareHandler
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
-from utils.logs_decorator import controller_log, action_log
+from utils.logs_decorator import controller_log
 from utils.query_json import query_to_json
 from utils.retry import async_retry
 from utils.twitter.twitter_client import TwitterOauthData
@@ -38,9 +32,7 @@ SIMPLE_ACCOUNT_FACTORY_ABI = [
             {"name": "owner", "type": "address", "internalType": "address"},
             {"name": "salt", "type": "uint256", "internalType": "uint256"},
         ],
-        "outputs": [
-            {"name": "addr", "type": "address", "internalType": "address"}
-        ],
+        "outputs": [{"name": "addr", "type": "address", "internalType": "address"}],
     },
     {
         "type": "function",
@@ -50,9 +42,7 @@ SIMPLE_ACCOUNT_FACTORY_ABI = [
             {"name": "owner", "type": "address", "internalType": "address"},
             {"name": "salt", "type": "uint256", "internalType": "uint256"},
         ],
-        "outputs": [
-            {"name": "account", "type": "address", "internalType": "address"}
-        ],
+        "outputs": [{"name": "account", "type": "address", "internalType": "address"}],
     },
 ]
 
@@ -62,30 +52,15 @@ ACCOUNT_FACTORY = RawContract(
     abi=SIMPLE_ACCOUNT_FACTORY_ABI,
 )
 
-salt  = "0x4b6f5b36bb7706150b17e2eecb6e602b1b90b94a4bf355df57466626a5cb897b"
+salt = "0x4b6f5b36bb7706150b17e2eecb6e602b1b90b94a4bf355df57466626a5cb897b"
 
 STAKING_SUBNETS = {
-    'Kite':
-        {
-            'address': '0x233b43fbe16b3c29df03914bac6a4b5e1616c3f3',
-            'id': 496
-        },
-    'Bitmind':
-        {
-            'address': '0xda925c81137dd6e44891cdbd5e84bda3b4f81671',
-            'id': 702
-        },
-    'AI Veronica':
-        {
-            'address': '0xb20f6f7d85f657c8cb66a7ee80799cf40f1d3533',
-            'id': 699
-        },
-    'Bitte':
-        {
-            'address': '0x72ce733c9974b180bed20343bd1024a3f855ec0c',
-            'id': 701
-        }
+    "Kite": {"address": "0x233b43fbe16b3c29df03914bac6a4b5e1616c3f3", "id": 496},
+    "Bitmind": {"address": "0xda925c81137dd6e44891cdbd5e84bda3b4f81671", "id": 702},
+    "AI Veronica": {"address": "0xb20f6f7d85f657c8cb66a7ee80799cf40f1d3533", "id": 699},
+    "Bitte": {"address": "0x72ce733c9974b180bed20343bd1024a3f855ec0c", "id": 701},
 }
+
 
 class KiteAIPortal(Base):
     __module_name__ = "Kite AI API"
@@ -137,24 +112,22 @@ class KiteAIPortal(Base):
         headers = {
             **self.base_headers,
             "Content-Type": "application/json",
-            "Authorization": generate_auth_token(self.client.account.address)
+            "Authorization": generate_auth_token(self.client.account.address),
         }
 
         data = {"eoa": self.client.account.address}
         if registration:
-            data.update(
-                {"aa_address": await self.get_eoa_account()}
-            )
+            data.update({"aa_address": await self.get_eoa_account()})
 
         r = await self.session.post(url=url, headers=headers, json=data, timeout=60)
 
-        if r.json().get('error') == 'aa address is not found':
+        if r.json().get("error") == "aa address is not found":
             return await self.sign_in(registration=True)
 
         r.raise_for_status()
 
-        self.wallet.auth_token = r.json().get('data').get('access_token')
-        self.wallet.eoa_address = r.json().get('data').get('aa_address')
+        self.wallet.auth_token = r.json().get("data").get("access_token")
+        self.wallet.eoa_address = r.json().get("data").get("aa_address")
         db.commit()
 
         return r.json()
@@ -171,36 +144,29 @@ class KiteAIPortal(Base):
 
     @async_retry(retries=3, delay=3)
     async def get_user_info(self, registration=False) -> dict:
-
         if not self.wallet.auth_token:
             await self.sign_in()
 
         settings = Settings()
 
-        headers = {
-            **self.base_headers,
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.wallet.auth_token}"
-            }
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
         if registration:
             url = f"{self.OZONE_API}/auth"
 
             payload = {
-                'registration_type_id': 1,
-                'user_account_id': '',
-                'user_account_name': '',
-                'eoa_address': self.client.account.address,
-                'smart_account_address': self.wallet.eoa_address,
-                'referral_code': "",
+                "registration_type_id": 1,
+                "user_account_id": "",
+                "user_account_name": "",
+                "eoa_address": self.client.account.address,
+                "smart_account_address": self.wallet.eoa_address,
+                "referral_code": "",
             }
 
             if settings.invite_codes:  # use only settings if provided
                 invite_code = random.choice(settings.invite_codes)
             else:
-                invite_codes_from_db = [
-                    code[0] for code in db.all(Wallet.invite_code, Wallet.invite_code != "")
-                ]
+                invite_codes_from_db = [code[0] for code in db.all(Wallet.invite_code, Wallet.invite_code != "")]
                 invite_code = random.choice(invite_codes_from_db) if invite_codes_from_db else ""
 
             if invite_code:
@@ -211,14 +177,14 @@ class KiteAIPortal(Base):
         url = f"{self.OZONE_API}/me"
         r = await self.session.get(url=url, headers=headers, timeout=60)
 
-        if 'Invalid token' in r.json().get('error'):
+        if "Invalid token" in r.json().get("error"):
             await self.sign_in()
             return await self.get_user_info()
 
-        if 'User does not exist' in r.json().get('error'):
+        if "User does not exist" in r.json().get("error"):
             return await self.get_user_info(registration=True)
 
-        data = r.json().get('data')
+        data = r.json().get("data")
 
         return data
 
@@ -226,43 +192,33 @@ class KiteAIPortal(Base):
     async def start_up_quiz(self) -> dict:
         url = f"{self.NEO_API}/v2/quiz/onboard/get"
 
-        headers = {
-            **self.base_headers,
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.wallet.auth_token}"
-        }
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
-        data = {
-            'eoa': self.client.account.address.lower()
-        }
+        data = {"eoa": self.client.account.address.lower()}
         r = await self.session.get(url=url, headers=headers, params=data, timeout=60)
 
         r.raise_for_status()
-        data = r.json().get('data')
+        data = r.json().get("data")
 
         return data
 
-    @controller_log('Quiz Submit')
+    @controller_log("Quiz Submit")
     async def submit(self, question_id, answer, finish=False, quiz_id: int = None):
         url = f"{self.NEO_API}/v2/quiz/onboard/submit"
 
         if quiz_id:
             url = f"{self.NEO_API}/v2/quiz/submit"
 
-        headers = {
-            **self.base_headers,
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.wallet.auth_token}"
-            }
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
         if not self.wallet.auth_token:
             return await self.sign_in()
 
         data = {
-            'answer': answer,
-            'eoa': self.client.account.address.lower() if not quiz_id else self.client.account.address,
-            'finish': finish,
-            'question_id': question_id,
+            "answer": answer,
+            "eoa": self.client.account.address.lower() if not quiz_id else self.client.account.address,
+            "finish": finish,
+            "question_id": question_id,
         }
 
         if quiz_id:
@@ -270,19 +226,18 @@ class KiteAIPortal(Base):
 
         r = await self.session.post(url=url, headers=headers, json=data, timeout=60)
 
-        if r.json().get('data').get('result')  == 'RIGHT':
-            return f'Success Answered '
+        if r.json().get("data").get("result") == "RIGHT":
+            return f"Success Answered "
 
-        raise Exception(f'Failed to answer: {r.status_code} {r.text}')
+        raise Exception(f"Failed to answer: {r.status_code} {r.text}")
 
-    @controller_log('Portal Faucet')
+    @controller_log("Portal Faucet")
     async def faucet(self):
-
         capmoster = CloudflareHandler(wallet=self.wallet)
 
         captcha_task = await capmoster.get_recaptcha_task_v2(
             websiteKey=self.TESTNET_SITE_KEY,
-            websiteURL='https://testnet.gokite.ai/',
+            websiteURL="https://testnet.gokite.ai/",
         )
 
         recaptcha_token = await capmoster.get_recaptcha_token(task_id=captcha_task)
@@ -292,7 +247,7 @@ class KiteAIPortal(Base):
             "Content-Type": "application/json",
             "Content-Length": "2",
             "Authorization": f"Bearer {self.wallet.auth_token}",
-            "x-recaptcha-token": recaptcha_token
+            "x-recaptcha-token": recaptcha_token,
         }
 
         json_data = {}
@@ -301,36 +256,34 @@ class KiteAIPortal(Base):
         r = await self.session.post(url=url, headers=headers, json=json_data, timeout=60)
 
         if r.status_code <= 202:
-
-            return r.json().get('data')
+            return r.json().get("data")
 
         raise Exception(f"{r.status_code} | {r.json()}")
 
-    @controller_log('Onchain Faucet')
+    @controller_log("Onchain Faucet")
     async def on_chain_faucet(self):
-
         capmoster = CloudflareHandler(wallet=self.wallet)
 
         captcha_task = await capmoster.get_recaptcha_task_v2(
             websiteKey=self.FAUCET_SITE_KEY,
-            websiteURL='https://faucet.gokite.ai/',
+            websiteURL="https://faucet.gokite.ai/",
         )
 
         recaptcha_token = await capmoster.get_recaptcha_token(task_id=captcha_task)
 
         headers = {
-            'Content-Type': 'application/json',
-            'origin': 'https://faucet.gokite.ai',
-            'priority': 'u=1, i',
-            'referer': 'https://faucet.gokite.ai/',
+            "Content-Type": "application/json",
+            "origin": "https://faucet.gokite.ai",
+            "priority": "u=1, i",
+            "referer": "https://faucet.gokite.ai/",
         }
 
         json_data = {
-            'address': self.client.account.address,
-            'token': '',
-            'v2Token': recaptcha_token,
-            'chain': 'KITE',
-            'couponId': '',
+            "address": self.client.account.address,
+            "token": "",
+            "v2Token": recaptcha_token,
+            "chain": "KITE",
+            "couponId": "",
         }
         url = f"{self.FAUCET_API}/api/SendToken"
 
@@ -339,7 +292,7 @@ class KiteAIPortal(Base):
         if r.status_code <= 202:
             self.wallet.next_faucet_time = datetime.now() + timedelta(minutes=1441)
             db.commit()
-            return r.json().get('message')
+            return r.json().get("message")
 
         if r.status_code == 429:
             self.wallet.next_faucet_time = datetime.now() + timedelta(minutes=1441)
@@ -347,41 +300,35 @@ class KiteAIPortal(Base):
 
             return f"Failed | Will retry after 24h | {r.json().get('message')}"
 
-        raise Exception(f'Something wrong | {r.status_code} | {r.text}')
+        raise Exception(f"Something wrong | {r.status_code} | {r.text}")
 
     async def daily_quiz(self):
-
         url = f"{self.NEO_API}/v2/quiz/create"
 
-        headers = {
-            **self.base_headers,
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.wallet.auth_token}"
-            }
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
         now = datetime.utcnow()
         date = now.strftime("%Y-%m-%d")
 
         data = {
-            'title': f'daily_quiz_{date}',
-            'num': 1,
-            'eoa': self.client.account.address,
+            "title": f"daily_quiz_{date}",
+            "num": 1,
+            "eoa": self.client.account.address,
         }
 
         quest = await self.session.post(url=url, headers=headers, json=data, timeout=60)
-        if quest.json().get('data').get('status') == 0:
-
+        if quest.json().get("data").get("status") == 0:
             url = f"{self.NEO_API}/v2/quiz/get"
             params = {
-                "id": quest.json().get('data').get('quiz_id'),
+                "id": quest.json().get("data").get("quiz_id"),
                 "eoa": self.client.account.address,
             }
             r = await self.session.get(url=url, headers=headers, params=params, timeout=60)
 
             r.raise_for_status()
 
-            return r.json().get('data')
+            return r.json().get("data")
 
-        return quest.get('data')
+        return quest.get("data")
 
     async def get_balances(self):
         headers = {
@@ -394,11 +341,10 @@ class KiteAIPortal(Base):
         r = await self.session.get(url=url, headers=headers, timeout=60)
         r.raise_for_status()
 
-        return r.json().get('data').get('balances').get('kite')
-
+        return r.json().get("data").get("balances").get("kite")
 
     async def withdrawal_from_portal(self, amount: int):
-        url = f'{self.NEO_API}/v2/transfer'
+        url = f"{self.NEO_API}/v2/transfer"
 
         headers = {
             **self.base_headers,
@@ -407,18 +353,13 @@ class KiteAIPortal(Base):
             "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
-        params = {
-            "eoa": self.client.account.address,
-            "amount": amount,
-            "type": 'native'
-        }
+        params = {"eoa": self.client.account.address, "amount": amount, "type": "native"}
 
         r = await self.session.post(url=url, headers=headers, params=params, json={}, timeout=60)
 
         r.raise_for_status()
 
-        return r.json().get('data').get('user_op_hash')
-
+        return r.json().get("data").get("user_op_hash")
 
     async def get_badges(self):
         headers = {
@@ -431,11 +372,10 @@ class KiteAIPortal(Base):
         r = await self.session.get(url=url, headers=headers, timeout=60)
         r.raise_for_status()
 
-        return r.json().get('data')
+        return r.json().get("data")
 
-    @controller_log('Claim Badge')
+    @controller_log("Claim Badge")
     async def claim_badge(self, badge_id):
-
         url = f"{self.OZONE_API}/badges/mint"
 
         headers = {
@@ -443,81 +383,75 @@ class KiteAIPortal(Base):
             "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
-        payload = {
-            "badge_id": int(badge_id)
-        }
+        payload = {"badge_id": int(badge_id)}
 
         r = await self.session.post(url=url, headers=headers, json=payload, timeout=60)
         r.raise_for_status()
 
-        return r.json().get('data')
+        return r.json().get("data")
 
     async def onboard_flow(self):
         user_info = await self.get_user_info()
 
-        if not user_info['onboarding_quiz_completed']:
-
+        if not user_info["onboarding_quiz_completed"]:
             quiz_info = await self.start_up_quiz()
 
-            if quiz_info['quiz']['user_id'] == 'ONBOARD':
-                questions = quiz_info['question']
+            if quiz_info["quiz"]["user_id"] == "ONBOARD":
+                questions = quiz_info["question"]
 
                 for q in questions:
                     finish = False
-                    if 'Which subnet type in Kite AI provides' in q['content']:
+                    if "Which subnet type in Kite AI provides" in q["content"]:
                         finish = True
 
-                    submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=finish)
+                    submit = await self.submit(question_id=q["question_id"], answer=q["answer"], finish=finish)
                     logger.debug(submit)
                     await asyncio.sleep(random.randint(3, 9))
 
-
-        if not user_info['daily_quiz_completed']:
+        if not user_info["daily_quiz_completed"]:
             daily_quest = await self.daily_quiz()
-            quiz_id = daily_quest.get('quiz').get('quiz_id')
-            questions = daily_quest.get('question')
+            quiz_id = daily_quest.get("quiz").get("quiz_id")
+            questions = daily_quest.get("question")
             if len(questions) > 0:
                 for q in questions:
                     await asyncio.sleep(random.randint(3, 9))
-                    submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=True, quiz_id=quiz_id)
+                    submit = await self.submit(question_id=q["question_id"], answer=q["answer"], finish=True, quiz_id=quiz_id)
                     logger.debug(submit)
 
-
-        if user_info['faucet_claimable']:
+        if user_info["faucet_claimable"]:
             await self.faucet()
 
         return user_info
 
-    @controller_log('Daily Quest')
+    @controller_log("Daily Quest")
     async def daily_quest_flow(self):
         daily_quest = await self.daily_quiz()
-        quiz_id = daily_quest.get('quiz').get('quiz_id')
-        questions = daily_quest.get('question')
+        quiz_id = daily_quest.get("quiz").get("quiz_id")
+        questions = daily_quest.get("question")
 
         if len(questions) > 0:
             for q in questions:
                 await asyncio.sleep(random.randint(3, 9))
-                submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=True,
-                                           quiz_id=quiz_id)
+                submit = await self.submit(question_id=q["question_id"], answer=q["answer"], finish=True, quiz_id=quiz_id)
                 logger.debug(f"{submit} | {q['content']}")
 
-            return f'Success submit daily quest'
+            return f"Success submit daily quest"
         else:
             raise Exception(f"Something wrong in daily quest | {daily_quest}")
 
-    @controller_log('Onboard Flow')
+    @controller_log("Onboard Flow")
     async def onboard_flow(self):
         quiz_info = await self.start_up_quiz()
 
-        if quiz_info['quiz']['user_id'] == 'ONBOARD':
-            questions = quiz_info['question']
+        if quiz_info["quiz"]["user_id"] == "ONBOARD":
+            questions = quiz_info["question"]
 
             for q in questions:
                 finish = False
-                if 'Which subnet type in Kite AI provides' in q['content']:
+                if "Which subnet type in Kite AI provides" in q["content"]:
                     finish = True
 
-                submit = await self.submit(question_id=q['question_id'], answer=q['answer'], finish=finish)
+                submit = await self.submit(question_id=q["question_id"], answer=q["answer"], finish=finish)
                 logger.debug(f"{submit} | {q['content']}")
                 await asyncio.sleep(random.randint(3, 9))
 
@@ -536,25 +470,19 @@ class KiteAIPortal(Base):
         r = await self.session.get(url=url, headers=headers, timeout=60)
         r.raise_for_status()
 
-        return r.json().get('data').get('total_staked_amount')
+        return r.json().get("data").get("total_staked_amount")
 
-    @controller_log('Portal Staking')
+    @controller_log("Portal Staking")
     async def stake(self, amount: int):
-
-
         agent = random.choice(list(STAKING_SUBNETS.keys()))
 
         balance = await self.get_balances()
         if balance < amount:
-            return 'Failed to Stake, low balance'
-
+            return "Failed to Stake, low balance"
 
         url = f"{self.OZONE_API}/subnet/delegate"
 
-        payload = {
-            'amount': amount,
-            'subnet_address': STAKING_SUBNETS[agent]['address']
-        }
+        payload = {"amount": amount, "subnet_address": STAKING_SUBNETS[agent]["address"]}
         headers = {
             **self.base_headers,
             "Authorization": f"Bearer {self.wallet.auth_token}",
@@ -563,11 +491,10 @@ class KiteAIPortal(Base):
         r = await self.session.post(url=url, headers=headers, json=payload, timeout=60)
 
         if r.status_code == 200:
-
-            res = r.json().get('data').get('tx_hash')
+            res = r.json().get("data").get("tx_hash")
             return f"Success | Staked to {agent} {amount} KITE | tx_hash: {res}"
 
-        raise Exception(f'Failed to stake | {r.status_code} | {r.text}')
+        raise Exception(f"Failed to stake | {r.status_code} | {r.text}")
 
     async def check_staked_balance(self):
         result = []
@@ -576,7 +503,7 @@ class KiteAIPortal(Base):
             await self.sign_in()
 
         for agent in STAKING_SUBNETS:
-            id = STAKING_SUBNETS[agent]['id']
+            id = STAKING_SUBNETS[agent]["id"]
 
             url = f"{self.OZONE_API}/subnet/{id}/staked-info?id={id}"
 
@@ -588,20 +515,19 @@ class KiteAIPortal(Base):
             r = await self.session.get(url=url, headers=headers, timeout=60)
 
             if r.status_code == 200:
-                amount = r.json().get('data').get('my_staked_amount')
+                amount = r.json().get("data").get("my_staked_amount")
                 if amount > 0:
                     result.append(agent)
 
             await asyncio.sleep(3, 10)
 
         return result
-    @controller_log('Claim Staking Rewards')
+
+    @controller_log("Claim Staking Rewards")
     async def claim_staking_rewards(self, agent):
         url = f"{self.OZONE_API}/subnet/claim-rewards"
 
-        payload = {
-            'subnet_address': STAKING_SUBNETS[agent]['address']
-        }
+        payload = {"subnet_address": STAKING_SUBNETS[agent]["address"]}
 
         headers = {
             **self.base_headers,
@@ -611,11 +537,11 @@ class KiteAIPortal(Base):
         r = await self.session.post(url=url, headers=headers, json=payload, timeout=60)
 
         if r.status_code == 200:
-            tx_hash = r.json().get('data').get('tx_hash')
-            claim_amount = r.json().get('data').get('claim_amount')
+            tx_hash = r.json().get("data").get("tx_hash")
+            claim_amount = r.json().get("data").get("claim_amount")
             return f"Success | Claimed {claim_amount} KITE from {agent} subnet| tx_hash: {tx_hash}"
 
-        raise Exception(f'Failed to claim | {r.status_code} | {r.text}')
+        raise Exception(f"Failed to claim | {r.status_code} | {r.text}")
 
     async def unstake(self):
         pass
@@ -624,12 +550,8 @@ class KiteAIPortal(Base):
         try:
             payload = {
                 "address": self.wallet.eoa_address,
-                "input": [
-                    { "type":"text/plain", "value":question }
-                ],
-                "output": [
-                    { "type":"text/plain", "value":answer }
-                ],
+                "input": [{"type": "text/plain", "value": question}],
+                "output": [{"type": "text/plain", "value": answer}],
                 "service_id": service,
             }
 
@@ -641,10 +563,7 @@ class KiteAIPortal(Base):
         try:
             payload = {
                 "service_id": service,
-                "body": {
-                    "message": question,
-                    "stream": True
-                },
+                "body": {"message": question, "stream": True},
                 "stream": True,
                 "subnet": "kite_ai_labs",
             }
@@ -672,7 +591,7 @@ class KiteAIPortal(Base):
                 break
 
             try:
-                payload = json.loads(line[len("data:"):].strip())
+                payload = json.loads(line[len("data:") :].strip())
                 choices = payload.get("choices") or [{}]
                 delta = choices[0].get("delta", {})
                 content = delta.get("content")
@@ -694,7 +613,7 @@ class KiteAIPortal(Base):
                 return result.strip()
 
             try:
-                json_data = json.loads(line[len("data:"):].strip())
+                json_data = json.loads(line[len("data:") :].strip())
                 delta = json_data.get("choices", [{}])[0].get("delta", {})
                 content = delta.get("content")
                 if content:
@@ -710,19 +629,17 @@ class KiteAIPortal(Base):
 
         payload = await self.generate_ai_request_payload(service, question, answer)
 
-        data = json.dumps(payload)
-
         headers = {
             **self.base_headers,
             "Content-Type": "application/json",
-            #"Content-Length": str(len(data)),
+            # "Content-Length": str(len(data)),
             "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
         r = await self.session.post(url=url, headers=headers, json=payload, timeout=90)
         r.raise_for_status()
 
-        return r.json().get('data')
+        return r.json().get("data")
 
     @async_retry(retries=5)
     async def get_inference(self, inference_id):
@@ -739,7 +656,7 @@ class KiteAIPortal(Base):
         tx_hash = r.json().get("data", {}).get("tx_hash", "")
 
         if not tx_hash:
-            raise Exception(f'no tx hash')
+            raise Exception(f"no tx hash")
 
         return tx_hash
 
@@ -752,7 +669,7 @@ class KiteAIPortal(Base):
             **self.base_headers,
             "accept": "text/event-stream",
             "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.wallet.auth_token}"
+            "Authorization": f"Bearer {self.wallet.auth_token}",
         }
 
         r = await self.session.post(url=url, headers=headers, json=payload, timeout=90)
@@ -768,7 +685,7 @@ class KiteAIPortal(Base):
 
         raise Exception(f"{self.wallet} | {r.status_code} | {r.text}")
 
-    @controller_log('AI Agent Dialog')
+    @controller_log("AI Agent Dialog")
     async def ai_agent_chat_flow(self):
         if self.paused:
             return f"AI Agent rate limit"
@@ -788,12 +705,11 @@ class KiteAIPortal(Base):
         q = random.choice(questions)
         questions.remove(q)
 
-        if agent_name == 'Sherlock':
-
+        if agent_name == "Sherlock":
             tx = await self.onchain_api.get_random_tx()
             if len(tx) > 0:
                 tx = random.choice(tx)
-                q = q + " " + tx.get('hash')
+                q = q + " " + tx.get("hash")
 
         try:
             logger.debug(f"{self.wallet} | {self.__module_name__} | Agent: {agent_name} | Question: {q}")
@@ -803,12 +719,12 @@ class KiteAIPortal(Base):
 
             submit_receipt = await self.submit_receipt(service=service, question=q, answer=communicate)
 
-            if not submit_receipt.get('id'):
+            if not submit_receipt.get("id"):
                 raise Exception(f"Conversation ID is not received")
 
             await asyncio.sleep(random.randint(3, 5))
 
-            finish = await self.get_inference(inference_id=submit_receipt['id'])
+            finish = await self.get_inference(inference_id=submit_receipt["id"])
 
             if finish:
                 return f"Agent: {agent_name} | Conversation Completed tx_hash: {finish}"
@@ -817,96 +733,70 @@ class KiteAIPortal(Base):
             raise Exception(f"Agent{agent_name} | {e}")
 
     async def get_twitter_link(self):
-
         if not self.wallet.auth_token:
             await self.sign_in()
 
         return f"https://x.com/i/api/2/oauth2/authorize?client_id=YW1nN2RHYmtEVV9odHNOSEZ2SEE6MTpjaQ&code_challenge=challenge&code_challenge_method=plain&redirect_uri=https%3A%2F%2Ftestnet.gokite.ai%2Ftwitter&response_type=code&scope=tweet.read%20users.read&state=state"
 
     async def bind_twitter(self, callback: TwitterOauthData):
-
         if not self.wallet.auth_token:
             await self.sign_in()
 
+        r = await self.session.get(url=callback.callback_url, allow_redirects=False)
 
-        r = await self.session.get(
-            url=callback.callback_url,
-            allow_redirects = False
-        )
+        location = r.headers.get("location")
 
-        location = r.headers.get('location')
-
-        r = await self.session.get(
-            url=location
-        )
+        r = await self.session.get(url=location)
 
         query_data = query_to_json(location)
 
-        cookies = {'user_session_id': self.wallet.auth_token}
+        cookies = {"user_session_id": self.wallet.auth_token}
 
-        headers = {
-            **self.base_headers,
-            "referer": f'{self.TESTNET_API}/twitter'
-        }
+        headers = {**self.base_headers, "referer": f"{self.TESTNET_API}/twitter"}
 
         r = await self.session.post(
-            url=f'{self.TESTNET_API}/twitter?token={query_data.get("token")}',
-            headers = headers,
+            url=f"{self.TESTNET_API}/twitter?token={query_data.get('token')}",
+            headers=headers,
             cookies=cookies,
-            json = {},
-
+            json={},
         )
         return r.json()
 
     async def get_discord_link(self):
         return f"https://discord.com/api/v9/oauth2/authorize?client_id=1355842034900013246&response_type=code&redirect_uri=https%3A%2F%2Ftestnet.gokite.ai%2Fdiscord&scope=identify&integration_type=0"
 
-
     async def bind_discord(self, callback: str):
-
         if not self.wallet.auth_token:
             await self.sign_in()
 
-        headers = {
-            "referer": 'https://discord.com/'
-        }
+        headers = {"referer": "https://discord.com/"}
 
-        r = await self.session.get(
-            url=callback,
-            headers=headers,
-            allow_redirects = False
-        )
+        r = await self.session.get(url=callback, headers=headers, allow_redirects=False)
 
-        location = r.headers.get('location')
+        location = r.headers.get("location")
 
-        r = await self.session.get(
-            url=location
-        )
+        r = await self.session.get(url=location)
 
         query_data = query_to_json(location)
 
         await asyncio.sleep(1, 3)
 
-        cookies = {'user_session_id': self.wallet.auth_token}
+        cookies = {"user_session_id": self.wallet.auth_token}
 
-        headers = {
-            **self.base_headers,
-            "referer": f'{self.TESTNET_API}/discord'
-        }
+        headers = {**self.base_headers, "referer": f"{self.TESTNET_API}/discord"}
         r = await self.session.post(
-            url=f'{self.TESTNET_API}/discord?token={query_data.get("token")}',
-            headers = headers,
+            url=f"{self.TESTNET_API}/discord?token={query_data.get('token')}",
+            headers=headers,
             cookies=cookies,
-            json = {},
+            json={},
         )
         return r.json()
 
     async def get_twitter_tasks(self, user_data):
-        user_data = user_data.get('social_accounts').get('twitter').get('action_types')
-        #disabled task
-        twitter_tasks = [task for task in user_data if not task['id'] == 17]
+        user_data = user_data.get("social_accounts").get("twitter").get("action_types")
+        # disabled task
+        twitter_tasks = [task for task in user_data if not task["id"] == 17]
 
-        twitter_tasks = [task for task in twitter_tasks if not task['is_completed']]
+        twitter_tasks = [task for task in twitter_tasks if not task["is_completed"]]
 
         return twitter_tasks
-
