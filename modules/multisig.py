@@ -161,6 +161,7 @@ class Safe(Base):
         initializer = await self.encode_initializer()
 
         salt = int(time.time())
+
         data = TxArgs(x=SafeContracts.SAFE_L2_V130.address, c=initializer, s=salt).tuple()
 
         e = factory.encodeABI("createProxyWithNonce", args=data)
@@ -172,6 +173,6 @@ class Safe(Base):
         rcpt = await tx.wait_for_receipt(client=self.client, timeout=300)
 
         if rcpt:
-            return f"Success created Multisig Wallet "
+            return f"Success created Multisig Wallet"
 
         return "Failed | Creating Multisig Wallet"
