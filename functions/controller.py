@@ -330,4 +330,3 @@ class Controller:
                 return f"Failed | {e}"
 
         else: raise Exception(f'Failed | Bad discord token | {self.wallet.discord_status}')
-
