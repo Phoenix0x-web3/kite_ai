@@ -1,5 +1,6 @@
 import asyncio
 import random
+import time
 
 from web3 import Web3, constants
 from web3.types import TxParams, TxReceipt
@@ -159,7 +160,7 @@ class Safe(Base):
         factory = await self.client.contracts.get(SafeContracts.SAFE_PROXY_FACTORY)
         initializer = await self.encode_initializer()
 
-        salt = random.randint(0, 254)
+        salt = int(time.time())
         data = TxArgs(x=SafeContracts.SAFE_L2_V130.address, c=initializer, s=salt).tuple()
 
         e = factory.encodeABI("createProxyWithNonce", args=data)
