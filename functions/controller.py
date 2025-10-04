@@ -81,9 +81,15 @@ class Controller:
                     if result:
                         results.append(f"Success | {result} |{name}")
 
+                if task['action_type_name'] == 'FOLLOW KITE FRENS ECO':
+                    name = task['action_type_name']
+                    result = await self.twitter.follow_account(account_name="Kite_Frens_Eco")
+                    if result:
+                        results.append(f"Success | {result} |{name}")
+
                 if "Retweet Kite AI's post" in task['action_type_name']:
                         name = task['action_type_name']
-                        result = await self.twitter.retweet(tweet_id=1962854326218477760)
+                        result = await self.twitter.retweet(tweet_id=1969275764349497365)
 
                         if result:
                             results.append(f"Success | {result} | {name}")

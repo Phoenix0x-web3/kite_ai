@@ -7,7 +7,7 @@ from loguru import logger
 
 import libs.baseAsyncSession as BaseAsyncSession
 import libs.twitter as twitter
-from libs.twitter.errors import AccountLocked, AccountNotFound, AccountSuspended, BadAccountToken
+from libs.twitter.errors import AccountLocked, AccountNotFound, AccountSuspended, AlreadyRetweeted, BadAccountToken
 from libs.twitter.utils import remove_at_sign
 from utils.browser import Browser
 from utils.db_api.models import Wallet
@@ -252,7 +252,7 @@ class TwitterClient:
             logger.warning(f"{self.user} Failed to post tweet")
             return None
 
-    async def retweet(self, tweet_id: int) -> bool:
+    async def retweet(self, tweet_id: int) -> bool | str:
         """
         Retweets the specified tweet
 
@@ -269,14 +269,19 @@ class TwitterClient:
                 raise Exception("Can't initialize twitter client")
 
         # Perform retweet
-        retweet_id = await self.twitter_client.repost(tweet_id)
+        try:
+            retweet_id = await self.twitter_client.repost(tweet_id)
 
-        if retweet_id:
-            logger.success(f"{self.user} Retweet successful")
-            return True
-        else:
-            logger.warning(f"{self.user} Failed to retweet")
-            return False
+            if retweet_id:
+                logger.success(f"{self.user} Retweet successful")
+                return f'Success retweeted {retweet_id}'
+
+            else:
+                logger.warning(f"{self.user} Failed to retweet")
+                return False
+
+        except AlreadyRetweeted as e:
+            return str(e)
 
     async def reply(self, tweet_id: int, reply_text: str) -> bool:
         """
