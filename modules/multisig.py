@@ -259,7 +259,6 @@ class Safe(Base):
         return td
 
     async def sign_safe_typed_data(self, typed_data):
-        #a = await self.sign_message()
         signed_typed_data = encode_typed_data(full_message=typed_data)
         signed = self.client.account.sign_message(signed_typed_data)
         r = signed.r.to_bytes(32, "big")
@@ -274,13 +273,13 @@ class Safe(Base):
             "signer": self.client.account.address,
         }
 
-    controller_log('Send from Multisig')
+    controller_log("Send from Multisig")
     async def send_native_from_safe(self):
         safe, balance = await self.find_safe_with_balance()
         # safe = '0x73e62d3Af60fc87FbF3A02D8cf01c63AbE14724f'
         # balance = TokenAmount(amount=0.01)
 
-        contract = RawContract(title='Safe', address=safe, abi=SAFE_L2_MIN_ABI)
+        contract = RawContract(title="Safe", address=safe, abi=SAFE_L2_MIN_ABI)
 
         contract = await self.client.contracts.get(contract_address=contract)
 
@@ -303,8 +302,9 @@ class Safe(Base):
         )
         sign = await self.sign_safe_typed_data(typed_data=typed)
 
-        data = contract.encodeABI('execTransaction', args=[
-
+        data = contract.encodeABI(
+            "execTransaction",
+            args=[
                 self.client.account.address,
                 balance.Wei,
                 Web3.to_bytes(hexstr="0x"),
@@ -315,7 +315,6 @@ class Safe(Base):
                 ADDR0,
                 ADDR0,
                 sign['sig_bytes']
-
         ])
 
         tx_params = TxParams(to=contract.address, data=data, value=0)
