@@ -28,6 +28,7 @@ class TwitterException(Exception):
 class FailedToFindDuplicatePost(TwitterException):
     pass
 
+
 class AlreadyRetweeted(TwitterException):
     pass
 

@@ -600,7 +600,6 @@ class Client(BaseHTTPClient):
         *,
         search_duplicate: bool = True,
     ) -> Tweet:
-
         try:
             tweet = await self._repost(tweet_id)
 
@@ -620,7 +619,6 @@ class Client(BaseHTTPClient):
                 raise AlreadyRetweeted(f"Already retweeted {duplicate_tweet}")
 
                 tweet = duplicate_tweet
-
 
             else:
                 raise

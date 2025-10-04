@@ -274,7 +274,7 @@ class TwitterClient:
 
             if retweet_id:
                 logger.success(f"{self.user} Retweet successful")
-                return f'Retweeted {retweet_id}'
+                return f"Retweeted {retweet_id}"
 
             else:
                 logger.warning(f"{self.user} Failed to retweet")

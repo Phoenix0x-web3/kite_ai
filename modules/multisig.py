@@ -69,10 +69,10 @@ SAFE_L2_MIN_ABI = [
             {"name": "gasPrice", "type": "uint256"},
             {"name": "gasToken", "type": "address"},
             {"name": "refundReceiver", "type": "address"},
-            {"name": "signatures", "type": "bytes"}
+            {"name": "signatures", "type": "bytes"},
         ],
         "outputs": [{"name": "success", "type": "bool"}],
-    }
+    },
 ]
 
 SAFE_TX_TYPES = {
@@ -81,16 +81,16 @@ SAFE_TX_TYPES = {
         {"name": "verifyingContract", "type": "address"},
     ],
     "SafeTx": [
-        {"name": "to",             "type": "address"},
-        {"name": "value",          "type": "uint256"},
-        {"name": "data",           "type": "bytes"},
-        {"name": "operation",      "type": "uint8"},
-        {"name": "safeTxGas",      "type": "uint256"},
-        {"name": "baseGas",        "type": "uint256"},
-        {"name": "gasPrice",       "type": "uint256"},
-        {"name": "gasToken",       "type": "address"},
+        {"name": "to", "type": "address"},
+        {"name": "value", "type": "uint256"},
+        {"name": "data", "type": "bytes"},
+        {"name": "operation", "type": "uint8"},
+        {"name": "safeTxGas", "type": "uint256"},
+        {"name": "baseGas", "type": "uint256"},
+        {"name": "gasPrice", "type": "uint256"},
+        {"name": "gasToken", "type": "address"},
         {"name": "refundReceiver", "type": "address"},
-        {"name": "nonce",          "type": "uint256"},
+        {"name": "nonce", "type": "uint256"},
     ],
 }
 
@@ -165,7 +165,6 @@ class Safe(Base):
 
     @controller_log("Deposit to Multisig")
     async def send_native_to_multisig(self, address):
-
         settings = Settings()
 
         percent = (
@@ -232,8 +231,7 @@ class Safe(Base):
             if balance.Ether > 0:
                 return safe, balance
 
-        raise Exception('Safes has no balances')
-
+        raise Exception("Safes has no balances")
 
     def build_safe_typed_data(self, domain, message) -> Dict:
         td = {
@@ -274,6 +272,7 @@ class Safe(Base):
         }
 
     controller_log("Send from Multisig")
+
     async def send_native_from_safe(self):
         safe, balance = await self.find_safe_with_balance()
         # safe = '0x73e62d3Af60fc87FbF3A02D8cf01c63AbE14724f'
@@ -304,18 +303,8 @@ class Safe(Base):
 
         data = contract.encodeABI(
             "execTransaction",
-            args=[
-                self.client.account.address,
-                balance.Wei,
-                Web3.to_bytes(hexstr="0x"),
-                0,
-                0,
-                0,
-                0,
-                ADDR0,
-                ADDR0,
-                sign['sig_bytes']
-        ])
+            args=[self.client.account.address, balance.Wei, Web3.to_bytes(hexstr="0x"), 0, 0, 0, 0, ADDR0, ADDR0, sign["sig_bytes"]],
+        )
 
         tx_params = TxParams(to=contract.address, data=data, value=0)
 
