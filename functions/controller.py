@@ -81,9 +81,15 @@ class Controller:
                     if result:
                         results.append(f"Success | {result} |{name}")
 
+                if task['action_type_name'] == 'FOLLOW KITE FRENS ECO':
+                    name = task['action_type_name']
+                    result = await self.twitter.follow_account(account_name="Kite_Frens_Eco")
+                    if result:
+                        results.append(f"Success | {result} |{name}")
+
                 if "Retweet Kite AI's post" in task['action_type_name']:
                         name = task['action_type_name']
-                        result = await self.twitter.retweet(tweet_id=1962854326218477760)
+                        result = await self.twitter.retweet(tweet_id=1969275764349497365)
 
                         if result:
                             results.append(f"Success | {result} | {name}")
@@ -146,6 +152,8 @@ class Controller:
         actions = []
 
         build_actions = []
+
+        end_actions = []
 
         swaps_count = random.randint(settings.swaps_count_min, settings.swaps_count_max)
         ai_dialogs_count = random.randint(settings.ai_dialogs_count_min, settings.ai_dialogs_count_max)
@@ -235,6 +243,9 @@ class Controller:
                             random.choice(multisig_wallets)
                         ) for _ in range(random.randint(2, 3))]
 
+                        end_actions += [lambda: self.safe.send_native_from_safe(
+                        ) for _ in range(random.randint(1, 2))]
+
         staking_amounts = await self.portal.get_stake_amounts()
 
         if staking_amounts <= 2:
@@ -257,7 +268,10 @@ class Controller:
         #     build_actions.append(lambda: self.portal.withdrawal_from_portal(amount=1))
 
         random.shuffle(build_actions)
+
         actions += build_actions
+        actions += end_actions
+
         return actions
 
     @controller_log('Bind Discord')
@@ -330,4 +344,3 @@ class Controller:
                 return f"Failed | {e}"
 
         else: raise Exception(f'Failed | Bad discord token | {self.wallet.discord_status}')
-

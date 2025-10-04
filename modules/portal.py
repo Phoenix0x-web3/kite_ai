@@ -795,8 +795,9 @@ class KiteAIPortal(Base):
     async def get_twitter_tasks(self, user_data):
         user_data = user_data.get("social_accounts").get("twitter").get("action_types")
         # disabled task
-        twitter_tasks = [task for task in user_data if not task["id"] == 17]
+        # print(user_data)
+        # twitter_tasks = [task for task in user_data if not task["id"] == 17]
 
-        twitter_tasks = [task for task in twitter_tasks if not task["is_completed"]]
+        twitter_tasks = [task for task in user_data if not task["is_completed"]]
 
         return twitter_tasks

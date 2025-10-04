@@ -17,6 +17,7 @@ from .errors import (
     AccountLocked,
     AccountNotFound,
     AccountSuspended,
+    AlreadyRetweeted,
     BadAccount,
     BadAccountToken,
     BadRequest,
@@ -601,6 +602,7 @@ class Client(BaseHTTPClient):
     ) -> Tweet:
         try:
             tweet = await self._repost(tweet_id)
+
         except HTTPException as exc:
             if (
                 search_duplicate and 327 in exc.error_codes  # duplicate retweet (You have already retweeted this Tweet)
@@ -613,6 +615,8 @@ class Client(BaseHTTPClient):
 
                 if not duplicate_tweet:
                     raise FailedToFindDuplicatePost(f"Couldn't find a post duplicate in the next 20 posts")
+
+                raise AlreadyRetweeted(f"Already retweeted {duplicate_tweet}")
 
                 tweet = duplicate_tweet
 
