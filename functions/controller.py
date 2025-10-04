@@ -244,7 +244,7 @@ class Controller:
                         ) for _ in range(random.randint(2, 3))]
 
                         end_actions += [lambda: self.safe.send_native_from_safe(
-                        ) for _ in range(random.randint(2, 3))]
+                        ) for _ in range(random.randint(1, 2))]
 
         staking_amounts = await self.portal.get_stake_amounts()
 
