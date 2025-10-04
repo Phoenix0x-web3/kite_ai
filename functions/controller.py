@@ -147,6 +147,8 @@ class Controller:
 
         build_actions = []
 
+        end_actions = []
+
         swaps_count = random.randint(settings.swaps_count_min, settings.swaps_count_max)
         ai_dialogs_count = random.randint(settings.ai_dialogs_count_min, settings.ai_dialogs_count_max)
 
@@ -235,6 +237,9 @@ class Controller:
                             random.choice(multisig_wallets)
                         ) for _ in range(random.randint(2, 3))]
 
+                        end_actions += [lambda: self.safe.send_native_from_safe(
+                        ) for _ in range(random.randint(2, 3))]
+
         staking_amounts = await self.portal.get_stake_amounts()
 
         if staking_amounts <= 2:
@@ -257,7 +262,10 @@ class Controller:
         #     build_actions.append(lambda: self.portal.withdrawal_from_portal(amount=1))
 
         random.shuffle(build_actions)
+
         actions += build_actions
+        actions += end_actions
+
         return actions
 
     @controller_log('Bind Discord')
