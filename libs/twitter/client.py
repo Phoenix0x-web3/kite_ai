@@ -597,7 +597,7 @@ class Client(BaseHTTPClient):
 
     async def _search_duplicate_repost(self, tweet_id: int):
         tweets = await self.request_tweets(self.account.id)
-        for tweet_ in tweets:  
+        for tweet_ in tweets:
             if tweet_.retweeted_tweet and tweet_.retweeted_tweet.id == tweet_id:
                 raise AlreadyRetweeted
 
@@ -609,9 +609,7 @@ class Client(BaseHTTPClient):
             tweet = await self._repost(tweet_id)
 
         except HTTPException as exc:
-            if (
-                327 in exc.error_codes 
-            ):
+            if 327 in exc.error_codes:
                 raise FailedToFindDuplicatePost(f"Couldn't find a post duplicate in the next 20 posts")
             else:
                 raise
@@ -740,7 +738,6 @@ class Client(BaseHTTPClient):
         for tweet_ in tweets:
             if tweet_.text.startswith(text.strip()):
                 raise AlreadyTweeted
-
 
     async def _tweet_tweet(
         self,
