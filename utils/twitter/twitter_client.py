@@ -7,7 +7,7 @@ from loguru import logger
 
 import libs.baseAsyncSession as BaseAsyncSession
 import libs.twitter as twitter
-from libs.twitter.errors import AccountLocked, AccountNotFound, AccountSuspended, AlreadyRetweeted, BadAccountToken
+from libs.twitter.errors import AccountLocked, AccountNotFound, AccountSuspended, AlreadyRetweeted, AlreadyTweeted, BadAccountToken
 from libs.twitter.utils import remove_at_sign
 from utils.browser import Browser
 from utils.db_api.models import Wallet
@@ -243,14 +243,17 @@ class TwitterClient:
             if not initialize:
                 raise Exception("Can't initialize twitter client")
         # Post the tweet
-        tweet = await self.twitter_client.tweet(text)
+        try:
+            tweet = await self.twitter_client.tweet(text)
 
-        if tweet:
-            logger.success(f"{self.user} Tweet posted (ID: {tweet.id})")
-            return tweet
-        else:
-            logger.warning(f"{self.user} Failed to post tweet")
-            return None
+            if tweet:
+                logger.success(f"{self.user} Tweet posted (ID: {tweet.id})")
+                return tweet
+            else:
+                logger.warning(f"{self.user} Failed to post tweet")
+                return None
+        except AlreadyTweeted as e:
+            return str(e)
 
     async def retweet(self, tweet_id: int) -> bool | str:
         """
@@ -283,7 +286,7 @@ class TwitterClient:
         except AlreadyRetweeted as e:
             return str(e)
 
-    async def reply(self, tweet_id: int, reply_text: str) -> bool:
+    async def reply(self, tweet_id: int, reply_text: str) -> bool | str:
         """
         Reply the specified tweet
 
@@ -299,14 +302,17 @@ class TwitterClient:
             if not initialize:
                 raise Exception("Can't initialize twitter client")
 
-        reply_id = await self.twitter_client.reply(tweet_id=tweet_id, text=reply_text)
+        try:
+            reply_id = await self.twitter_client.reply(tweet_id=tweet_id, text=reply_text)
 
-        if reply_id:
-            logger.success(f"{self.user} Reply successful {reply_id}")
-            return True
-        else:
-            logger.warning(f"{self.user} Failed to reply ")
-            return False
+            if reply_id:
+                logger.success(f"{self.user} Reply successful {reply_id}")
+                return True
+            else:
+                logger.warning(f"{self.user} Failed to reply ")
+                return False
+        except AlreadyTweeted as e:
+            return str(e)
 
     async def like_tweet(self, tweet_id: int) -> bool:
         """

@@ -32,6 +32,9 @@ class FailedToFindDuplicatePost(TwitterException):
 class AlreadyRetweeted(TwitterException):
     pass
 
+class AlreadyTweeted(TwitterException):
+    pass
+
 
 def _http_exception_message(
     response: requests.Response,
