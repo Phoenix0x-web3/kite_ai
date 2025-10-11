@@ -48,7 +48,7 @@ async def choose_action():
         raise SystemExit(0)
 
     if category == "DB Actions":
-        actions = ["Import wallets to Database", "Sync wallets with tokens and proxies", "Export wallets to TXT", "Back"]
+        actions = ["Import wallets to Database", "Sync wallets with tokens and proxies", "Export Database to CSV", "Back"]
 
     if category == PROJECT_NAME:
         actions = PROJECT_ACTIONS
@@ -73,9 +73,9 @@ async def choose_action():
     elif action == "Sync wallets with tokens and proxies":
         console.print(f"[bold blue]Starting sync data in DB[/bold blue]")
         await Sync.sync_wallets_with_tokens_and_proxies()
-    elif action == "Export wallets to TXT":
-        console.print(f"[bold blue]Starting Import Wallets to DB[/bold blue]")
-        await Export.wallets_to_txt()
+    elif action == "Export Database to CSV":
+        console.print(f"[bold blue]Starting Export Database to CSV[/bold blue]")
+        await Export.data_to_csv()
 
     elif action == "1. Random Activity":
         await activity(action=1)
