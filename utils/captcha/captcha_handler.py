@@ -8,6 +8,7 @@ from loguru import logger
 
 from utils.browser import Browser
 from utils.db_api.models import Wallet
+from utils.retry import async_retry
 from data.settings import Settings
 
 
@@ -147,7 +148,7 @@ class CloudflareHandler:
         }
 
         # Maximum wait time (60 seconds)
-        max_attempts = 60
+        max_attempts = 60 * 3
 
         for _ in range(max_attempts):
             try:
@@ -159,6 +160,7 @@ class CloudflareHandler:
                 if resp.status_code == 200:
                     result = resp.text
                     result = json.loads(result)
+                    logger.debug(result)
                     if result['status'] == 'ready':
                         # Get cf_clearance from solution
                         if 'solution' in result:
@@ -170,14 +172,17 @@ class CloudflareHandler:
 
                     elif result['status'] == 'processing':
                         # If task is still processing, wait 1 second
-                        await asyncio.sleep(1)
+                        await asyncio.sleep(10)
                         continue
                     else:
                         logger.error(f"{self.browser.wallet} unknown task status: {result['status']}")
                         return None
+                elif resp.status_code in [404,400,402]:
+                    logger.error(f"{self.browser.wallet}| CaptchaSolver | error getting task result | {resp.status_code}")
+                    return None
                 else:
-                    logger.error(f"{self.browser.wallet} | CaptchaSolver | error getting task result | {resp.status_code}")
-                    await asyncio.sleep(3)
+                    logger.debug(f"{self.browser.wallet} | CaptchaSolver | error getting task result | {resp.status_code}")
+                    await asyncio.sleep(10)
                     continue
 
             except Exception as e:
@@ -186,6 +191,17 @@ class CloudflareHandler:
 
         logger.error(f"{self.browser.wallet} exceeded wait time for CapMonster solution")
         return None
+
+    @async_retry()
+    async def handle_v2_captcha(self, websiteURL, websiteKey):
+        captcha_task = await self.get_recaptcha_task_v2(websiteURL=websiteURL, websiteKey=websiteKey)
+        if not captcha_task:
+            raise Exception("Can't get captcha task")
+        token = await self.get_recaptcha_token(task_id=captcha_task)
+        if not token:
+            raise Exception("Can't get captcha token")
+        return token
+
 
     async def recaptcha_handle(self, html: str, websiteURL: str, websiteKey: str) -> Optional[str]:
         """

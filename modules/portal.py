@@ -235,19 +235,14 @@ class KiteAIPortal(Base):
     async def faucet(self):
         capmoster = CloudflareHandler(wallet=self.wallet)
 
-        captcha_task = await capmoster.get_recaptcha_task_v2(
-            websiteKey=self.TESTNET_SITE_KEY,
-            websiteURL="https://testnet.gokite.ai/",
-        )
-
-        recaptcha_token = await capmoster.get_recaptcha_token(task_id=captcha_task)
+        recaptcha_token = await capmoster.handle_v2_captcha(websiteURL="https://testnet.gokite.ai/", websiteKey=self.TESTNET_SITE_KEY)
 
         headers = {
             **self.base_headers,
             "Content-Type": "application/json",
             "Content-Length": "2",
             "Authorization": f"Bearer {self.wallet.auth_token}",
-            "x-recaptcha-token": recaptcha_token,
+            "X-Recaptcha-Token": recaptcha_token,
         }
 
         json_data = {}
@@ -264,12 +259,7 @@ class KiteAIPortal(Base):
     async def on_chain_faucet(self):
         capmoster = CloudflareHandler(wallet=self.wallet)
 
-        captcha_task = await capmoster.get_recaptcha_task_v2(
-            websiteKey=self.FAUCET_SITE_KEY,
-            websiteURL="https://faucet.gokite.ai/",
-        )
-
-        recaptcha_token = await capmoster.get_recaptcha_token(task_id=captcha_task)
+        recaptcha_token = await capmoster.handle_v2_captcha(websiteURL="https://faucet.gokite.ai/", websiteKey=self.FAUCET_SITE_KEY)
 
         headers = {
             "Content-Type": "application/json",
