@@ -160,7 +160,6 @@ class CloudflareHandler:
                 if resp.status_code == 200:
                     result = resp.text
                     result = json.loads(result)
-                    logger.debug(result)
                     if result['status'] == 'ready':
                         # Get cf_clearance from solution
                         if 'solution' in result:
