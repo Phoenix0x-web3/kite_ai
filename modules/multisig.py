@@ -147,7 +147,7 @@ class Safe(Base):
         if r.json().get("code") == 429:
             return "Failed"
 
-        return r.json().get("2368")
+        return r.json().get("2368", [])
 
     async def get_safe_nonce(self, address: str):
         url = f"{self.BASE}/v1/chains/2368/safes/{address}/nonces"
