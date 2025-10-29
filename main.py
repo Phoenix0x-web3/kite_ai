@@ -22,7 +22,7 @@ PROJECT_ACTIONS = [
     "1. Random Activity",
     # "2. Twitter Tasks",
     "2. Discord Tasks",
-    "3. Push Social Tasks",
+    "3. Push Social Tasks and Bound",
     # "5. Swaps",
     # "6. Bridge",
     "Back",
@@ -83,7 +83,7 @@ async def choose_action():
     elif action == "2. Discord Tasks":
         await activity(action=2)
 
-    elif action == "3. Push Social Tasks":
+    elif action == "3. Push Social Tasks and Bound":
         await activity(action=3)
 
     elif action == "1. Reset files Folder":
