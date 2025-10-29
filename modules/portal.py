@@ -148,7 +148,7 @@ class KiteAIPortal(Base):
 
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
-        r = await self.session.post(url=self.OZONE_API, json=json_data, headers=headers)
+        r = await self.session.post(url=f"{self.OZONE_API}/me/update-reward-eoa-address", json=json_data, headers=headers)
 
         return r.json()
 
