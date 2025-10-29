@@ -141,6 +141,17 @@ class KiteAIPortal(Base):
         #     cookie_string = "; ".join([f"{k}={m.value}" for k, m in cookie.items()])
         # print(cookie_string)
 
+    async def bound_eoa_address(self):
+        json_data = {
+            "reward_eoa_address": self.client.account.address(),
+        }
+
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
+
+        r = await self.session.post(url=self.OZONE_API, json=json_data, headers=headers)
+
+        return r.json()
+
     async def post_discord(self, discord_id: str):
         url = f"{self.NEO_API}/v2/check/discord"
 
@@ -220,7 +231,9 @@ class KiteAIPortal(Base):
         metrics = await self.post_frontend_metrics()
         logger.debug(metrics)
 
-        return f"Pushed Social Tasks"
+        bound = await self.bound_eoa_address()
+        logger.debug(bound)
+        return f"Pushed Social Tasks and Bounded Address"
 
     @async_retry(retries=3, delay=3)
     async def get_user_info(self, registration=False) -> dict:
