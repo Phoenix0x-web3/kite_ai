@@ -143,7 +143,7 @@ class KiteAIPortal(Base):
 
     async def bound_eoa_address(self):
         json_data = {
-            'reward_eoa_address': self.client.account.address(),
+            "reward_eoa_address": self.client.account.address(),
         }
 
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
@@ -232,7 +232,7 @@ class KiteAIPortal(Base):
         logger.debug(metrics)
 
         bound = await self.bound_eoa_address()
-        logger.debug(metrics)
+        logger.debug(bound)
         return f"Pushed Social Tasks and Bounded Address"
 
     @async_retry(retries=3, delay=3)
