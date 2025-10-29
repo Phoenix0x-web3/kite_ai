@@ -91,6 +91,7 @@ async def join_discord(wallet):
     except Exception as e:
         logger.error(e)
 
+
 async def push_social_tasks(wallet):
     await random_sleep_before_start(wallet=wallet)
     client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.PharosTestnet)

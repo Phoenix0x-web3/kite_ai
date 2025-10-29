@@ -144,84 +144,66 @@ class KiteAIPortal(Base):
     async def post_discord(self, discord_id: str):
         url = f"{self.NEO_API}/v2/check/discord"
 
-        headers = {**self.base_headers, "Content-Type": "application/json",
-                   "Authorization": f"Bearer {self.wallet.auth_token}"}
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
         params = {
-            'eoa': self.client.account.address.lower(),
-            'path': 'discord',
-            'user_id': discord_id,
+            "eoa": self.client.account.address.lower(),
+            "path": "discord",
+            "user_id": discord_id,
         }
 
-        r = await self.session.get(
-            url=url,
-            params=params,
-            headers=headers
-        )
+        r = await self.session.get(url=url, params=params, headers=headers)
 
         return r.json()
 
     async def post_twitters(self, twitter_id: str, id):
         url = f"{self.OZONE_API}/me/follow-x"
 
-        headers = {**self.base_headers, "Content-Type": "application/json",
-                   "Authorization": f"Bearer {self.wallet.auth_token}"}
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
         params = {
-            'id': id,
+            "id": id,
         }
 
         json_data = {
-            'eoa': self.client.account.address.lower(),
-            'path': f'?id={id}',
-            'user_id': twitter_id,
+            "eoa": self.client.account.address.lower(),
+            "path": f"?id={id}",
+            "user_id": twitter_id,
         }
 
-        r = await self.session.post(
-            url=url,
-            params=params,
-            headers=headers,
-            json=json_data
-        )
+        r = await self.session.post(url=url, params=params, headers=headers, json=json_data)
 
         return r.json()
 
     async def post_frontend_metrics(self):
-
         url = f"{self.OZONE_API}/metrics/frontend"
 
-        headers = {**self.base_headers, "Content-Type": "application/json",
-                   "Authorization": f"Bearer {self.wallet.auth_token}"}
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
         json_data = {
-            'metrics': [
+            "metrics": [
                 {
-                    'name': 'FCP',
-                    'value': random.randint(0, 1),
+                    "name": "FCP",
+                    "value": random.randint(0, 1),
                 },
                 {
-                    'name': 'TTFB',
-                    'value': random.randint(0, 1),
+                    "name": "TTFB",
+                    "value": random.randint(0, 1),
                 },
             ],
         }
 
-
-        r = await self.session.post(
-            url=url,
-            headers=headers,
-            json=json_data
-        )
+        r = await self.session.post(url=url, headers=headers, json=json_data)
 
         return r.json()
 
-    @controller_log('Push Tasks to Kite')
+    @controller_log("Push Tasks to Kite")
     async def grab_points_social(self):
         user_info = await self.get_user_info()
 
-        socials = user_info.get('social_accounts')
+        socials = user_info.get("social_accounts")
 
-        tw_id = socials.get('twitter').get('id')
+        tw_id = socials.get("twitter").get("id")
 
         if tw_id:
             get_points = await self.post_twitters(tw_id, 0)
@@ -229,7 +211,7 @@ class KiteAIPortal(Base):
             get_points = await self.post_twitters(tw_id, 1)
             logger.debug(get_points)
 
-        ds_id = socials.get('discord').get('id')
+        ds_id = socials.get("discord").get("id")
 
         if ds_id:
             get_points = await self.post_discord(discord_id=ds_id)
@@ -238,13 +220,10 @@ class KiteAIPortal(Base):
         metrics = await self.post_frontend_metrics()
         logger.debug(metrics)
 
-        return f'Pushed Social Tasks'
-
+        return f"Pushed Social Tasks"
 
     @async_retry(retries=3, delay=3)
     async def get_user_info(self, registration=False) -> dict:
-
-
         if not self.wallet.auth_token:
             await self.sign_in()
 
@@ -284,7 +263,6 @@ class KiteAIPortal(Base):
         if "User does not exist" in r.json().get("error"):
             return await self.get_user_info(registration=True)
 
-
         data = r.json().get("data")
 
         return data
@@ -297,7 +275,6 @@ class KiteAIPortal(Base):
 
         data = {"eoa": self.client.account.address.lower()}
         r = await self.session.get(url=url, headers=headers, params=data, timeout=60)
-
 
         r.raise_for_status()
         data = r.json().get("data")
@@ -330,7 +307,7 @@ class KiteAIPortal(Base):
 
         if quiz_id:
             url = f"{self.OZONE_API}/me"
-            req = await self.session.get(url=url, headers=headers, timeout=60)
+            await self.session.get(url=url, headers=headers, timeout=60)
 
         if r.json().get("data").get("result") == "RIGHT":
             return f"Success Answered "
