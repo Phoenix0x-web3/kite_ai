@@ -22,7 +22,7 @@ PROJECT_ACTIONS = [
     "1. Random Activity",
     # "2. Twitter Tasks",
     "2. Discord Tasks",
-    # "4. AI Talk",
+    "3. Push Social Tasks",
     # "5. Swaps",
     # "6. Bridge",
     "Back",
@@ -83,8 +83,8 @@ async def choose_action():
     elif action == "2. Discord Tasks":
         await activity(action=2)
 
-    elif action == "Start Testing Twitter":
-        await activity(action=4)
+    elif action == "3. Push Social Tasks":
+        await activity(action=3)
 
     elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.")

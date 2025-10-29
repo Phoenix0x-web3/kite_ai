@@ -91,6 +91,25 @@ async def join_discord(wallet):
     except Exception as e:
         logger.error(e)
 
+async def push_social_tasks(wallet):
+    await random_sleep_before_start(wallet=wallet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.PharosTestnet)
+
+    controller = Controller(client=client, wallet=wallet)
+
+    try:
+        result = await controller.push_social_tasks()
+
+        if "Failed" not in result:
+            logger.success(result)
+
+            return result
+
+        logger.error(result)
+
+    except Exception as e:
+        logger.error(e)
+
 
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
     while True:
@@ -172,8 +191,8 @@ async def activity(action: int):
 
         await execute(wallets, join_discord, 0)
 
-    # elif action == 2:
-    #     await execute(wallets, test_requests)
+    elif action == 3:
+        await execute(wallets, push_social_tasks)
     #
     # elif action == 3:
     #     await execute(wallets, test_web3, random.randint(Settings().random_pause_wallet_after_completion_min, Settings().random_pause_wallet_after_completion_max))

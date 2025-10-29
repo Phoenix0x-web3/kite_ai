@@ -44,6 +44,9 @@ class Controller:
     async def onchain_faucet(self):
         pass
 
+    async def push_social_tasks(self):
+        return await self.portal.grab_points_social()
+
     @controller_log('Bind Twitter')
     async def bind_twitter(self):
         auth_url = await self.portal.get_twitter_link()
@@ -262,6 +265,7 @@ class Controller:
                     agent = staked_amounts
                     build_actions.append(lambda: self.portal.claim_staking_rewards(agent=agent))
 
+        build_actions.append(lambda: self.portal.grab_points_social())
         # portal_balance = await self.portal.get_balances()
         #
         # if portal_balance.get('kite') > 0.01:
