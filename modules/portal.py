@@ -143,12 +143,12 @@ class KiteAIPortal(Base):
 
     async def bound_eoa_address(self):
         json_data = {
-            "reward_eoa_address": self.client.account.address(),
+            "reward_eoa_address": self.client.account.address.lower(),
         }
 
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
-        r = await self.session.post(url=self.OZONE_API, json=json_data, headers=headers)
+        r = await self.session.post(url=f"{self.OZONE_API}/me/update-reward-eoa-address", json=json_data, headers=headers)
 
         return r.json()
 
