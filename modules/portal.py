@@ -143,7 +143,7 @@ class KiteAIPortal(Base):
 
     async def bound_eoa_address(self):
         json_data = {
-            "reward_eoa_address": self.client.account.address(),
+            "reward_eoa_address": self.client.account.address.lower(),
         }
 
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
