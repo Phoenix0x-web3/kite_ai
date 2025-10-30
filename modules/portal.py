@@ -487,7 +487,7 @@ class KiteAIPortal(Base):
 
     async def onboard_flow(self):
         user_info = await self.get_user_info()
-        print(user_info)
+
         if not user_info["onboarding_quiz_completed"]:
             quiz_info = await self.start_up_quiz()
 
