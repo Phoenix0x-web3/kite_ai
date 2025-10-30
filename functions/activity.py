@@ -112,6 +112,26 @@ async def push_social_tasks(wallet):
         logger.error(e)
 
 
+async def bound_eoa(wallet):
+    await random_sleep_before_start(wallet=wallet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.PharosTestnet)
+
+    controller = Controller(client=client, wallet=wallet)
+
+    try:
+        result = await controller.bound_eoa_address()
+
+        if "Failed" not in result:
+            logger.success(result)
+
+            return result
+
+        logger.error(result)
+
+    except Exception as e:
+        logger.error(e)
+
+
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
     while True:
         semaphore = asyncio.Semaphore(min(len(wallets), Settings().threads))
@@ -194,6 +214,9 @@ async def activity(action: int):
 
     elif action == 3:
         await execute(wallets, push_social_tasks)
+
+    elif action == 4:
+        await execute(wallets, bound_eoa)
     #
     # elif action == 3:
     #     await execute(wallets, test_web3, random.randint(Settings().random_pause_wallet_after_completion_min, Settings().random_pause_wallet_after_completion_max))

@@ -141,6 +141,7 @@ class KiteAIPortal(Base):
         #     cookie_string = "; ".join([f"{k}={m.value}" for k, m in cookie.items()])
         # print(cookie_string)
 
+    @async_retry()
     async def bound_eoa_address(self):
         json_data = {
             "reward_eoa_address": self.client.account.address.lower(),
@@ -152,6 +153,7 @@ class KiteAIPortal(Base):
 
         return r.json()
 
+    @async_retry(retries=3, delay=2)
     async def post_discord(self, discord_id: str):
         url = f"{self.NEO_API}/v2/check/discord"
 
@@ -485,7 +487,7 @@ class KiteAIPortal(Base):
 
     async def onboard_flow(self):
         user_info = await self.get_user_info()
-
+        print(user_info)
         if not user_info["onboarding_quiz_completed"]:
             quiz_info = await self.start_up_quiz()
 
