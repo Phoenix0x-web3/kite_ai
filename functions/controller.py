@@ -47,6 +47,11 @@ class Controller:
     async def push_social_tasks(self):
         return await self.portal.grab_points_social()
 
+    @controller_log('Bound EOA Address')
+    async def bound_eoa_address(self):
+        await self.portal.get_user_info()
+        return await self.portal.bound_eoa_address()
+
     @controller_log('Bind Twitter')
     async def bind_twitter(self):
         auth_url = await self.portal.get_twitter_link()
