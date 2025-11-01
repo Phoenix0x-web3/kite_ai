@@ -296,18 +296,11 @@ async def activity(action: int):
 
     elif action == 5:
         await execute(wallets, checker)
+        await summary()
+
 
     elif action == 6:
-        wallets = db.all(Wallet)
-        wallets = [wallet for wallet in wallets if wallet.airdrop != 0]
-
-        summary = 0
-        for wallet in wallets:
-            if wallet.airdrop > 0:
-                logger.success(f"{wallet}: Allocation = {wallet.airdrop} Kite")
-            summary += int(wallet.airdrop)
-
-        logger.success(f'SUMMARY OF FARM: {summary} KITE')
+        await summary()
 
     #
     # elif action == 3:
@@ -315,3 +308,15 @@ async def activity(action: int):
     #
     # elif action == 4:
     #     await execute(wallets, test_twitter)
+
+async def summary():
+    wallets = db.all(Wallet)
+    wallets = [wallet for wallet in wallets if wallet.airdrop != 0]
+
+    summary = 0
+    for wallet in wallets:
+        if wallet.airdrop > 0:
+            logger.success(f"{wallet}: Allocation = {wallet.airdrop} Kite")
+        summary += int(wallet.airdrop)
+
+    logger.success(f'SUMMARY OF FARM: {summary} KITE')
