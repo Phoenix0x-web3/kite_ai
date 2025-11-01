@@ -20,12 +20,10 @@ console = Console()
 
 PROJECT_ACTIONS = [
     "1. Random Activity",
-    # "2. Twitter Tasks",
     "2. Discord Tasks",
     "3. Push Social Tasks and Bound",
     "4. Bound Wallet Address",
-    # "5. Swaps",
-    # "6. Bridge",
+    "5. Checker",
     "Back",
 ]
 
@@ -89,6 +87,9 @@ async def choose_action():
 
     elif action == "4. Bound Wallet Address":
         await activity(action=4)
+
+    elif action == "5. Checker":
+        await activity(action=5)
 
     elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.")
