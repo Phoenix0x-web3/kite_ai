@@ -138,23 +138,30 @@ async def push_social_tasks(wallet):
 
 
 async def bound_eoa(wallet):
-    if wallet.bound_eoa_address:
-        if wallet.bound_eoa_address == wallet.address:
-            logger.info(f"{wallet} | Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}")
-            return f"Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}"
-
     await random_sleep_before_start(wallet=wallet)
     client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
 
     controller = Controller(client=client, wallet=wallet)
 
     try:
-        result = await controller.bound_eoa_address()
+        await controller.portal.get_user_info()
+        current_eoa = await controller.portal.get_current_eoa()
+        current_eoa = current_eoa.get("current_eoa_address")
 
-        if "Failed" not in result:
-            logger.success(result)
+        if current_eoa != wallet.bound_eoa_address:
+            logger.warning(f"Detected not walid bound address: {current_eoa} | need: {wallet.bound_eoa_address}")
 
-            return result
+            result = await controller.bound_eoa_address()
+
+            if "Failed" not in result:
+                logger.success(result)
+
+                return result
+
+        else:
+            logger.info(f"Already Bounded Same: {current_eoa} <-> client_address: {wallet.bound_eoa_address}")
+
+            return "Already Bounded Same"
 
         logger.error(result)
 
@@ -165,6 +172,7 @@ async def bound_eoa(wallet):
             proxy = parse_proxy(pick_proxy(proxies, 0))
 
             wallet.proxy = proxy
+            print(wallet.proxy)
             db.commit()
             return await bound_eoa(wallet)
             logger.error(e)

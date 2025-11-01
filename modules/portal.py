@@ -177,6 +177,9 @@ class KiteAIPortal(Base):
 
     @async_retry(retries=3)
     async def get_current_eoa(self):
+        if not self.wallet.auth_token:
+            await self.sign_in()
+
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
         r = await self.session.get(url=f"{self.OZONE_API}/me/bind-eoa-wallet", headers=headers)
