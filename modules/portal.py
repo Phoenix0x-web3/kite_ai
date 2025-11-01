@@ -941,10 +941,8 @@ class KiteAIPortal(Base):
 
         headers = {"referer": "https://discord.com/"}
 
-        print(callback)
         r = await self.session.get(url=callback, headers=headers, allow_redirects=False)
-        print(r.text)
-        print(r.headers)
+
         location = r.headers.get("location")
 
         r = await self.session.get(url=location)
