@@ -177,6 +177,9 @@ class KiteAIPortal(Base):
 
     @async_retry(retries=3)
     async def get_current_eoa(self):
+        if not self.wallet.auth_token:
+            await self.sign_in()
+
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
 
         r = await self.session.get(url=f"{self.OZONE_API}/me/bind-eoa-wallet", headers=headers)
@@ -375,13 +378,6 @@ class KiteAIPortal(Base):
             return f"Success Answered "
 
         raise Exception(f"Failed to answer: {r.status_code} {r.text}")
-
-    async def tests(self):
-        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
-
-        url = f"{self.NEO_API}/me"
-        req = await self.session.get(url=url, headers=headers, timeout=60)
-        print(req.text)
 
     @controller_log("Portal Faucet")
     async def faucet(self):
@@ -917,8 +913,6 @@ class KiteAIPortal(Base):
             "timestamp": int(time.time() * 1000),
             "social": "discord",
         }
-
-        print(payload)
 
         r = await self.session.post(
             url=f"{self.OZONE_API}/social_oauth/state/store",
