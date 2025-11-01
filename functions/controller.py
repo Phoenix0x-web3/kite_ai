@@ -47,7 +47,7 @@ class Controller:
     async def push_social_tasks(self):
         return await self.portal.grab_points_social()
 
-    @controller_log('Bound EOA Address')
+    @controller_log('Bound Wallet Address')
     async def bound_eoa_address(self):
         await self.portal.get_user_info()
         return await self.portal.bound_eoa_address()

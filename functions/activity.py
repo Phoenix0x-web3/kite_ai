@@ -13,6 +13,7 @@ from libs.eth_async.client import Client
 from libs.eth_async.data.models import Networks
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
+from utils.db_import_export_sync import parse_proxy, pick_proxy, read_lines, remove_line_from_file
 from utils.discord.discord import DiscordStatus
 from utils.encryption import check_encrypt_param
 
@@ -57,6 +58,14 @@ async def random_activity_task(wallet):
                     logger.error(e)
 
                 except Exception as e:
+                    if "Failed to perform, curl" in str(e):
+                        proxies = read_lines("reserve_proxy.txt")
+
+                        proxy = parse_proxy(pick_proxy(proxies, 0))
+                        wallet.proxy = proxy
+                        db.commit()
+                        remove_line_from_file(proxy, "reserve_proxy.txt")
+                        return await random_activity_task(wallet)
                     logger.error(e)
                     continue
 
@@ -74,13 +83,13 @@ async def random_activity_task(wallet):
 
 
 async def join_discord(wallet):
-    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.PharosTestnet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
 
     controller = Controller(client=client, wallet=wallet)
 
     try:
         result = await controller.join_discord_channel()
-
+        await controller.push_social_tasks()
         if "Failed" not in result:
             logger.success(result)
 
@@ -89,12 +98,20 @@ async def join_discord(wallet):
         logger.error(result)
 
     except Exception as e:
-        logger.error(e)
+        if "Failed to perform, curl" in str(e):
+            proxies = read_lines("reserve_proxy.txt")
+
+            proxy = parse_proxy(pick_proxy(proxies, 0))
+            wallet.proxy = proxy
+            db.commit()
+            remove_line_from_file(proxy, "reserve_proxy.txt")
+            return await join_discord(wallet)
+            logger.error(e)
 
 
 async def push_social_tasks(wallet):
     await random_sleep_before_start(wallet=wallet)
-    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.PharosTestnet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
 
     controller = Controller(client=client, wallet=wallet)
 
@@ -109,12 +126,25 @@ async def push_social_tasks(wallet):
         logger.error(result)
 
     except Exception as e:
+        if "Failed to perform, curl" in str(e):
+            proxies = read_lines("reserve_proxy.txt")
+
+            proxy = parse_proxy(pick_proxy(proxies, 0))
+            wallet.proxy = proxy
+            db.commit()
+            remove_line_from_file(proxy, "reserve_proxy.txt")
+            return await push_social_tasks(wallet)
         logger.error(e)
 
 
 async def bound_eoa(wallet):
+    if wallet.bound_eoa_address:
+        if wallet.bound_eoa_address == wallet.address:
+            logger.info(f"{wallet} | Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}")
+            return f"Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}"
+
     await random_sleep_before_start(wallet=wallet)
-    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.PharosTestnet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
 
     controller = Controller(client=client, wallet=wallet)
 
@@ -129,7 +159,15 @@ async def bound_eoa(wallet):
         logger.error(result)
 
     except Exception as e:
-        logger.error(e)
+        if "Failed to perform, curl" in str(e):
+            proxies = read_lines("reserver_proxy.txt")
+
+            proxy = parse_proxy(pick_proxy(proxies, 0))
+
+            wallet.proxy = proxy
+            db.commit()
+            return await bound_eoa(wallet)
+            logger.error(e)
 
 
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
