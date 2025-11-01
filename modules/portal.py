@@ -185,7 +185,6 @@ class KiteAIPortal(Base):
 
     @async_retry(retries=3)
     async def bound_eoa_address(self):
-
         json_data = {
             "reward_eoa_address": self.client.account.address,
         }
