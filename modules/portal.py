@@ -106,7 +106,7 @@ class KiteAIPortal(Base):
         addr = await c.functions.getAddress(self.client.account.address, salt_u256).call()
         return addr
 
-    @async_retry(retries=5, delay=3)
+    @async_retry(retries=3, delay=3)
     async def sign_in(self, registration=False) -> dict:
         url = f"{self.TESTNET_API}/api/signin"
 
@@ -175,8 +175,17 @@ class KiteAIPortal(Base):
         #     cookie_string = "; ".join([f"{k}={m.value}" for k, m in cookie.items()])
         # print(cookie_string)
 
-    @async_retry()
+    @async_retry(retries=3)
+    async def get_current_eoa(self):
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
+
+        r = await self.session.get(url=f"{self.OZONE_API}/me/bind-eoa-wallet", headers=headers)
+
+        return r.json().get("data")
+
+    @async_retry(retries=3)
     async def bound_eoa_address(self):
+
         json_data = {
             "reward_eoa_address": self.client.account.address,
         }
@@ -185,6 +194,11 @@ class KiteAIPortal(Base):
 
         r = await self.session.post(url=f"{self.OZONE_API}/me/update-reward-eoa-address", json=json_data, headers=headers)
 
+        current_eoa = await self.get_current_eoa()
+        current_eoa = current_eoa.get("current_eoa_address")
+
+        self.wallet.bound_eoa_address = current_eoa
+        db.commit()
         return r.json()
 
     @async_retry(retries=3, delay=2)
