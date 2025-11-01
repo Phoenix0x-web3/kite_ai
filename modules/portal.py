@@ -379,13 +379,6 @@ class KiteAIPortal(Base):
 
         raise Exception(f"Failed to answer: {r.status_code} {r.text}")
 
-    async def tests(self):
-        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
-
-        url = f"{self.NEO_API}/me"
-        req = await self.session.get(url=url, headers=headers, timeout=60)
-        print(req.text)
-
     @controller_log("Portal Faucet")
     async def faucet(self):
         capmoster = CloudflareHandler(wallet=self.wallet)
@@ -920,8 +913,6 @@ class KiteAIPortal(Base):
             "timestamp": int(time.time() * 1000),
             "social": "discord",
         }
-
-        print(payload)
 
         r = await self.session.post(
             url=f"{self.OZONE_API}/social_oauth/state/store",
