@@ -22,6 +22,7 @@ class Wallet(Base):
     points: Mapped[int] = mapped_column(default=0)
     rank: Mapped[int] = mapped_column(default=0)
     invite_code: Mapped[str] = mapped_column(default="")
+    bound_eoa_address: Mapped[str] = mapped_column(default="")
     twitter_token: Mapped[str] = mapped_column(default=None, nullable=True)
     twitter_status: Mapped[str] = mapped_column(default=None, nullable=True)
     discord_token: Mapped[str] = mapped_column(default=None, nullable=True)
