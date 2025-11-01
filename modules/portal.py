@@ -1,6 +1,9 @@
 import asyncio
 import json
 import random
+import secrets
+import time
+import uuid
 from datetime import datetime, timedelta
 from typing import Union
 
@@ -109,17 +112,51 @@ class KiteAIPortal(Base):
     async def sign_in(self, registration=False) -> dict:
         url = f"{self.TESTNET_API}/api/signin"
 
+        body = {"eoa": self.client.account.address.lower()}
+
+        ts = str(int(time.time()))
+        nonce = secrets.token_hex(32)
+
+        body_json_compact = json.dumps(body, ensure_ascii=False, separators=(",", ":"))
+
+        message_lines = [
+            self.client.account.address.lower(),
+            "POST",
+            "/api/signin",
+            body_json_compact,
+            ts,
+            nonce,
+        ]
+
+        message = "\n".join(message_lines)
+
+        #print(message)
+
+        sig = await self.sign_message(text=message)
+
+
         headers = {
             **self.base_headers,
-            "Content-Type": "application/json",
-            "Authorization": generate_auth_token(self.client.account.address),
+            'content-type': 'text/plain;charset=UTF-8',
+            # 'origin': 'https://testnet.gokite.ai',
+            'priority': 'u=1, i',
+            # 'referer': 'https://testnet.gokite.ai/',
+            #"Content-Type": "application/json",
+            #"Authorization": generate_auth_token(self.client.account.address),
+            "x-auth-timestamp": ts,
+            "x-auth-nonce": nonce,
+            "x-auth-signature": sig,
         }
 
-        data = {"eoa": self.client.account.address}
+        #print(json.dumps(headers, indent=4))
+
+        data = {"eoa": self.client.account.address.lower()}
+
         if registration:
             data.update({"aa_address": await self.get_eoa_account()})
 
         r = await self.session.post(url=url, headers=headers, json=data, timeout=60)
+        #print(r.text)
         if r.json().get("error") == "aa address is not found":
             return await self.sign_in(registration=True)
 
@@ -144,7 +181,7 @@ class KiteAIPortal(Base):
     @async_retry()
     async def bound_eoa_address(self):
         json_data = {
-            "reward_eoa_address": self.client.account.address.lower(),
+            "reward_eoa_address": self.client.account.address,
         }
 
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.wallet.auth_token}"}
@@ -857,8 +894,38 @@ class KiteAIPortal(Base):
         )
         return r.json()
 
+    @async_retry(retries=3)
+    async def post_discord_state_code(self):
+        if not self.wallet.auth_token:
+            await self.sign_in()
+
+        headers = {**self.base_headers, "Content-Type": "application/json",
+                   "Authorization": f"Bearer {self.wallet.auth_token}"}
+
+        state = secrets.token_hex(32)
+        payload = {
+            "state": state,
+            "timestamp": int(time.time() * 1000),
+            "social": 'discord',
+        }
+
+        print(payload)
+
+
+        r = await self.session.post(
+                url=f"{self.OZONE_API}/social_oauth/state/store",
+                headers=headers,
+                json=payload,
+            )
+
+        return r.json(), state
+
     async def get_discord_link(self):
-        return f"https://discord.com/api/v9/oauth2/authorize?client_id=1355842034900013246&response_type=code&redirect_uri=https%3A%2F%2Ftestnet.gokite.ai%2Fdiscord&scope=identify&integration_type=0"
+        resp, state = await self.post_discord_state_code()
+        if resp.get('data').get('success'):
+            return f"https://discord.com/api/v9/oauth2/authorize?client_id=1355842034900013246&response_type=code&redirect_uri=https%3A%2F%2Ftestnet.gokite.ai%2Fdiscord&scope=identify&integration_type=0"
+
+        raise Exception('Cant get state toke from Ozone')
 
     async def bind_discord(self, callback: str):
         if not self.wallet.auth_token:
@@ -866,8 +933,10 @@ class KiteAIPortal(Base):
 
         headers = {"referer": "https://discord.com/"}
 
+        print(callback)
         r = await self.session.get(url=callback, headers=headers, allow_redirects=False)
-
+        print(r.text)
+        print(r.headers)
         location = r.headers.get("location")
 
         r = await self.session.get(url=location)
