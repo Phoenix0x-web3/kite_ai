@@ -179,14 +179,14 @@ async def bound_eoa(wallet):
 
 
 async def checker(wallet):
-    #await random_sleep_before_start(wallet=wallet)
+    # await random_sleep_before_start(wallet=wallet)
     client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
 
     try:
         controller = Controller(client=client, wallet=wallet)
 
         result = await controller.checker()
-
+        db.commit()
         if "Not" not in result:
             logger.success(result)
 
@@ -207,6 +207,7 @@ async def checker(wallet):
             db.commit()
             return await bound_eoa(wallet)
             logger.error(e)
+
 
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
     while True:
@@ -298,7 +299,6 @@ async def activity(action: int):
         await execute(wallets, checker)
         await summary()
 
-
     elif action == 6:
         await summary()
 
@@ -308,6 +308,7 @@ async def activity(action: int):
     #
     # elif action == 4:
     #     await execute(wallets, test_twitter)
+
 
 async def summary():
     wallets = db.all(Wallet)
@@ -319,4 +320,4 @@ async def summary():
             logger.success(f"{wallet}: Allocation = {wallet.airdrop} Kite")
         summary += int(wallet.airdrop)
 
-    logger.success(f'SUMMARY OF FARM: {summary} KITE')
+    logger.success(f"SUMMARY OF FARM: {summary} KITE")

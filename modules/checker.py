@@ -1,28 +1,15 @@
-import asyncio
 import json
-import random
 import secrets
 import time
-from datetime import datetime, timedelta
-from typing import Union
 
-from loguru import logger
-from web3 import Web3
-
-from data.promts import Agents
-from data.settings import Settings
 from libs.base import Base
 from libs.eth_async.client import Client
-from libs.eth_async.data.models import RawContract
 from modules.chain_api import BlockScout
 from utils.browser import Browser
-from utils.captcha.captcha_handler import CloudflareHandler
 from utils.db_api.models import Wallet
-from utils.db_api.wallet_api import db
 from utils.logs_decorator import controller_log
-from utils.query_json import query_to_json
 from utils.retry import async_retry
-from utils.twitter.twitter_client import TwitterOauthData
+
 
 class KiteAIChecker(Base):
     __module_name__ = "Kite AI Checker"
@@ -70,7 +57,6 @@ class KiteAIChecker(Base):
         headers = {
             **self.base_headers,
             "content-type": "text/plain;charset=UTF-8",
-
             "priority": "u=1, i",
             "x-auth-timestamp": ts,
             "x-auth-nonce": nonce,
@@ -87,26 +73,24 @@ class KiteAIChecker(Base):
         return r.json()
 
     async def get_token_allocation(self):
-
         headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.auth_token}"}
 
         r = await self.session.get(
-            url=f"{self.CHECKER_API}/api/v1/allocations/eligibility/{self.client.account.address.lower()}",
-            headers=headers)
+            url=f"{self.CHECKER_API}/api/v1/allocations/eligibility/{self.client.account.address.lower()}", headers=headers
+        )
 
-        return r.json().get('data') # .get('token_amount')
+        return r.json().get("data")  # .get('token_amount')
 
-    @controller_log('Airdrop Checker')
+    @controller_log("Airdrop Checker")
     async def check_kite_ai(self):
         await self.sign_in()
 
         alloca = await self.get_token_allocation()
 
-        if alloca.get('is_eligible'):
+        if alloca.get("is_eligible"):
+            self.wallet.eligible = alloca.get("is_eligible")
+            self.wallet.airdrop = int(alloca.get("token_amount"))
 
-            self.wallet.eligible = alloca.get('is_eligible')
-            self.wallet.airdrop = alloca.get('token_amount')
+            return f"Token Allocation {alloca}"
 
-            return f'Token Allocation {alloca}'
-
-        return f'Not Eligble | {alloca}'
+        return f"Not Eligble | {alloca}"
