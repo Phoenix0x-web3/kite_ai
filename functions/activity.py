@@ -149,7 +149,7 @@ async def bound_eoa(wallet):
         current_eoa = current_eoa.get("current_eoa_address")
 
         if current_eoa != wallet.bound_eoa_address:
-            logger.warning(f"Detected not walid bound address: {current_eoa} | need: {wallet.bound_eoa_address}")
+            logger.warning(f"Detected not walid bound address: {current_eoa} | need: {wallet.address}")
 
             result = await controller.bound_eoa_address()
 
