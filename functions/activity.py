@@ -110,6 +110,8 @@ async def join_discord(wallet):
 
 
 async def push_social_tasks(wallet):
+
+
     await random_sleep_before_start(wallet=wallet)
     client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
 
@@ -138,6 +140,11 @@ async def push_social_tasks(wallet):
 
 
 async def bound_eoa(wallet):
+
+    if wallet.bound_eoa_address:
+        logger.info(f"{wallet} | Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}")
+        return f"Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}"
+
     await random_sleep_before_start(wallet=wallet)
     client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
 
