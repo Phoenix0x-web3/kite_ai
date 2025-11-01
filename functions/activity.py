@@ -178,6 +178,36 @@ async def bound_eoa(wallet):
             logger.error(e)
 
 
+async def checker(wallet):
+    #await random_sleep_before_start(wallet=wallet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
+
+    try:
+        controller = Controller(client=client, wallet=wallet)
+
+        result = await controller.checker()
+
+        if "Not" not in result:
+            logger.success(result)
+
+            return result
+
+        logger.error(result)
+
+        return result
+
+    except Exception as e:
+        if "Failed to perform, curl" in str(e):
+            proxies = read_lines("reserver_proxy.txt")
+
+            proxy = parse_proxy(pick_proxy(proxies, 0))
+
+            wallet.proxy = proxy
+            print(wallet.proxy)
+            db.commit()
+            return await bound_eoa(wallet)
+            logger.error(e)
+
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
     while True:
         semaphore = asyncio.Semaphore(min(len(wallets), Settings().threads))
@@ -263,6 +293,22 @@ async def activity(action: int):
 
     elif action == 4:
         await execute(wallets, bound_eoa)
+
+    elif action == 5:
+        await execute(wallets, checker)
+
+    elif action == 6:
+        wallets = db.all(Wallet)
+        wallets = [wallet for wallet in wallets if wallet.airdrop != 0]
+
+        summary = 0
+        for wallet in wallets:
+            if wallet.airdrop > 0:
+                logger.success(f"{wallet}: Allocation = {wallet.airdrop} Kite")
+            summary += int(wallet.airdrop)
+
+        logger.success(f'SUMMARY OF FARM: {summary} KITE')
+
     #
     # elif action == 3:
     #     await execute(wallets, test_web3, random.randint(Settings().random_pause_wallet_after_completion_min, Settings().random_pause_wallet_after_completion_max))

@@ -7,6 +7,7 @@ from loguru import logger
 from data.settings import Settings
 from libs.eth_async.client import Client
 from libs.base import Base
+from modules.checker import KiteAIChecker
 from modules.multisig import Safe
 from modules.onchain import KiteOnchain
 from modules.portal import KiteAIPortal
@@ -29,6 +30,10 @@ class Controller:
         self.portal = KiteAIPortal(client=client, wallet=wallet)
         self.onchain = KiteOnchain(client=client, wallet=wallet)
         self.safe = Safe(client=client, wallet=wallet)
+        self.checker_kite = KiteAIChecker(client=client, wallet=wallet)
+
+    async def checker(self):
+        return await self.checker_kite.check_kite_ai()
 
     @controller_log('Update Points')
     async def update_db_by_user_info(self):

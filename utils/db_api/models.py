@@ -31,6 +31,8 @@ class Wallet(Base):
     next_faucet_time: Mapped[datetime] = mapped_column(default=datetime.now)
     next_ai_conversation_time: Mapped[datetime] = mapped_column(default=datetime.now)
     auth_token: Mapped[str] = mapped_column(default=None, nullable=True)
+    eligible: Mapped[bool] = mapped_column(default=None, nullable=True)
+    airdrop: Mapped[int] = mapped_column(default=0)
     completed: Mapped[bool] = mapped_column(default=False)
 
     def __repr__(self):
