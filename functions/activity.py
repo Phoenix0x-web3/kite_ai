@@ -139,7 +139,7 @@ async def push_social_tasks(wallet):
 
 async def bound_eoa(wallet):
     if wallet.bound_eoa_address:
-        if wallet.bound_eoa_address != wallet.address:
+        if wallet.bound_eoa_address == wallet.address:
             logger.info(f"{wallet} | Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}")
             return f"Already Bound: {wallet.bound_eoa_address} - client address: {wallet.address}"
 
