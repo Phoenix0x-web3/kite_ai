@@ -62,14 +62,14 @@ class PwForm:
             await self.wait_and_click(selector=selectors.OK_TWITTER)
             discord_name = self.faker.user_name()
             if self.wallet.discord_token:
-                guild_id = '1298000367283601428'
+                guild_id = "1298000367283601428"
 
-                discord_inviter = DiscordInviter(
-                    wallet=self.wallet,
-                    invite_code='gokiteai',
-                    channel_id=guild_id)
+                discord_inviter = DiscordInviter(wallet=self.wallet, invite_code="gokiteai", channel_id=guild_id)
 
-                _, discord_username = await discord_inviter.get_username()
+                _, discord_name = await discord_inviter.get_username()
+                if not discord_name:
+                    logger.error(f"{self.wallet} can't get discord username. Use Fake")
+                    discord_name = self.faker.user_name()
 
             logger.debug(f"{self.wallet} discord username for form: {discord_name}")
             await self.page.fill(selectors.DISCORD_INPUT.value, str(discord_name))
