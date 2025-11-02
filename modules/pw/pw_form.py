@@ -5,7 +5,7 @@ from typing import Optional
 from faker import Faker
 from loguru import logger
 from patchright.async_api import async_playwright
-from playwright.sync_api import Frame
+from patchright.sync_api import Frame
 
 from data.settings import Settings
 from utils import selectors
