@@ -55,6 +55,9 @@ class PwForm:
                     twitter_client = TwitterClient(user=self.wallet)
                     await twitter_client.initialize()
                     twitter_username = twitter_client.twitter_account.username
+                    if not twitter_username:
+                        logger.error(f"{self.wallet} can't get twitter username. Use Fake")
+                        twitter_username = self.faker.user_name()
                 except Exception:
                     logger.error(f"{self.wallet} can't get twitter username. Use Fake")
             logger.debug(f"{self.wallet} twitter username for form: {twitter_username}")
