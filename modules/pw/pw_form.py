@@ -11,6 +11,7 @@ from data.settings import Settings
 from utils import selectors
 from utils.browser import Browser
 from utils.db_api.models import Wallet
+from utils.discord.discord import DiscordInviter
 from utils.retry import async_retry
 from utils.selectors import Selector
 from utils.twitter.twitter_client import TwitterClient
@@ -60,9 +61,16 @@ class PwForm:
             await self.page.fill(selectors.TWITTER_INPUT.value, "@" + str(twitter_username))
             await self.wait_and_click(selector=selectors.OK_TWITTER)
             discord_name = self.faker.user_name()
-            # if self.wallet.discord_token:
-            #         discord_client = DiscordStatus()
-            #         await discord_client.
+            if self.wallet.discord_token:
+                guild_id = '1298000367283601428'
+
+                discord_inviter = DiscordInviter(
+                    wallet=self.wallet,
+                    invite_code='gokiteai',
+                    channel_id=guild_id)
+
+                _, discord_username = await discord_inviter.get_username()
+
             logger.debug(f"{self.wallet} discord username for form: {discord_name}")
             await self.page.fill(selectors.DISCORD_INPUT.value, str(discord_name))
             await self.wait_and_click(selector=selectors.OK_DISCORD)

@@ -418,6 +418,30 @@ class DiscordInviter:
         return r.text
 
     @open_session
+    async def get_username(self) -> str | None:
+        try:
+            url = f"{self.REST_BASE}/users/@me"
+            r = await self.async_session.get(url, headers={
+                "accept": "application/json",
+                "authorization": self.discord_token,
+                "user-agent": self.async_session.user_agent,
+            })
+
+            if r.status_code == 401:
+                return None
+
+            data = r.json()
+            username = data.get("username")
+            discriminator = data.get("discriminator")
+
+            if username:
+                return username
+            return None
+        except Exception as e:
+            logger.error(f"{self.wallet} | {self.__module_name__} | get_username error: {e}")
+            return None
+
+    @open_session
     async def accept_invite(self) -> Tuple[bool, str]:
         headers = {
             'accept': '*/*',
