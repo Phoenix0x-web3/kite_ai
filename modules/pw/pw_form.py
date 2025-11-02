@@ -55,24 +55,36 @@ class PwForm:
                     twitter_client = TwitterClient(user=self.wallet)
                     await twitter_client.initialize()
                     twitter_username = twitter_client.twitter_account.username
+
                     if not twitter_username:
                         logger.error(f"{self.wallet} can't get twitter username. Use Fake")
+                        rnd = random.randint(1000, 90000)
                         twitter_username = self.faker.user_name()
+                        twitter_username = f"{twitter_username}{str(rnd)}"
+
                 except Exception:
                     logger.error(f"{self.wallet} can't get twitter username. Use Fake")
             logger.debug(f"{self.wallet} twitter username for form: {twitter_username}")
             await self.page.fill(selectors.TWITTER_INPUT.value, "@" + str(twitter_username))
             await self.wait_and_click(selector=selectors.OK_TWITTER)
             discord_name = self.faker.user_name()
+
             if self.wallet.discord_token:
-                guild_id = "1298000367283601428"
+                try:
+                    guild_id = "1298000367283601428"
 
-                discord_inviter = DiscordInviter(wallet=self.wallet, invite_code="gokiteai", channel_id=guild_id)
+                    discord_inviter = DiscordInviter(wallet=self.wallet, invite_code="gokiteai", channel_id=guild_id)
 
-                _, discord_name = await discord_inviter.get_username()
-                if not discord_name:
+                    _, discord_name = await discord_inviter.get_username()
+                    if not discord_name:
+                        logger.error(f"{self.wallet} can't get discord username. Use Fake")
+                        discord_name = self.faker.user_name()
+
+                except:
                     logger.error(f"{self.wallet} can't get discord username. Use Fake")
+                    rnd = random.randint(1000, 90000)
                     discord_name = self.faker.user_name()
+                    discord_name = f"{discord_name}{str(rnd)}"
 
             logger.debug(f"{self.wallet} discord username for form: {discord_name}")
             await self.page.fill(selectors.DISCORD_INPUT.value, str(discord_name))
