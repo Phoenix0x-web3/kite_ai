@@ -24,6 +24,7 @@ PROJECT_ACTIONS = [
     "3. Push Social Tasks and Bound",
     "4. Bound Wallet Address",
     "5. Checker",
+    "6. Fill Appeal Form",
     "Back",
 ]
 
@@ -90,6 +91,9 @@ async def choose_action():
 
     elif action == "5. Checker":
         await activity(action=5)
+
+    elif action == "6. Fill Appeal Form":
+        await activity(action=6)
 
     elif action == "1. Reset files Folder":
         console.print("This action will delete the files folder and reset it.")

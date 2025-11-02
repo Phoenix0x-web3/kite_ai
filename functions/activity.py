@@ -137,6 +137,36 @@ async def push_social_tasks(wallet):
         logger.error(e)
 
 
+async def pw_form(wallet):
+    if wallet.airdrop > 0 or wallet.fill_form:
+        return
+    await random_sleep_before_start(wallet=wallet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
+
+    controller = Controller(client=client, wallet=wallet)
+
+    try:
+        result = await controller.playwright_form()
+        db.commit()
+        if "Failed" not in result:
+            logger.success(f"{wallet} {result}")
+            return result
+
+        logger.error(f"{wallet} {result}")
+
+    except Exception as e:
+        logger.error(e)
+        if "Failed to perform, curl" in str(e):
+            proxies = read_lines("reserver_proxy.txt")
+
+            proxy = parse_proxy(pick_proxy(proxies, 0))
+
+            wallet.proxy = proxy
+            print(wallet.proxy)
+            db.commit()
+            return await pw_form(wallet)
+
+
 async def bound_eoa(wallet):
     await random_sleep_before_start(wallet=wallet)
     client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
@@ -300,7 +330,7 @@ async def activity(action: int):
         await summary()
 
     elif action == 6:
-        await summary()
+        await execute(wallets, pw_form)
 
     #
     # elif action == 3:

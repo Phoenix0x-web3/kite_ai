@@ -47,6 +47,7 @@ class Settings(Singleton):
         self.invite_codes = json_data.get("invite_codes", [])
         self.capmonster_api_key = json_data.get("capmonster_api_key", {})
         self.discord_proxy = json_data.get("discord_proxy", {})
+        self.show_browser = json_data.get("show_browser", False)
 
 
 # Configure the logger based on the settings

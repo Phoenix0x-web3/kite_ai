@@ -34,6 +34,7 @@ class Wallet(Base):
     eligible: Mapped[bool] = mapped_column(default=None)
     airdrop: Mapped[int] = mapped_column(default=0)
     completed: Mapped[bool] = mapped_column(default=False)
+    fill_form: Mapped[bool] = mapped_column(default=False)
 
     def __repr__(self):
         if Settings().show_wallet_address_logs:

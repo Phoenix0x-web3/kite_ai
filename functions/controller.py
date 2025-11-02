@@ -11,6 +11,7 @@ from modules.checker import KiteAIChecker
 from modules.multisig import Safe
 from modules.onchain import KiteOnchain
 from modules.portal import KiteAIPortal
+from modules.pw.pw_form import PwForm
 
 from utils.db_api.models import Wallet
 from utils.db_api.wallet_api import db
@@ -31,6 +32,10 @@ class Controller:
         self.onchain = KiteOnchain(client=client, wallet=wallet)
         self.safe = Safe(client=client, wallet=wallet)
         self.checker_kite = KiteAIChecker(client=client, wallet=wallet)
+        self.pw_form = PwForm(wallet=wallet)
+
+    async def playwright_form(self):
+        return await self.pw_form.handle_form()
 
     async def checker(self):
         return await self.checker_kite.check_kite_ai()
@@ -358,3 +363,4 @@ class Controller:
                 return f"Failed | {e}"
 
         else: raise Exception(f'Failed | Bad discord token | {self.wallet.discord_status}')
+

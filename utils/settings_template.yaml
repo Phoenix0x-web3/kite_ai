@@ -74,3 +74,6 @@ multisig_percent:
 
 # Invite Codes for kiteAi network, example [invite_code1, invite_code2]
 invite_codes: []
+
+# Show browser 
+show_browser: false
