@@ -239,8 +239,6 @@ async def claimer(wallet):
             print(wallet.proxy)
             db.commit()
             return await claimer(wallet)
-            logger.error(e)
-
 
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
     while True:
@@ -336,7 +334,7 @@ async def activity(action: int):
         wallets: List[Wallet] = [w for w in wallets if w.eligible]
 
         await execute(wallets, claimer)
-        await summary()
+        #wait summary()
 
     #
     # elif action == 3:

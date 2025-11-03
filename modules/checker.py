@@ -4,6 +4,7 @@ import random
 import secrets
 import time
 
+from loguru import logger
 from web3.types import TxParams
 
 from libs.base import Base
@@ -130,6 +131,8 @@ class KiteAIChecker(Base):
     @controller_log("Airdrop Claim")
     async def claim_controller(self) -> str:
 
+        logger.info(f"{self.wallet} | Started Claim {self.wallet.airdrop} KITE on Mainnet")
+
         eth_client = Client(private_key=self.wallet.private_key, proxy=self.wallet.proxy, network=Networks.Ethereum)
 
         proof = await self.get_merkle_proof()
@@ -145,9 +148,11 @@ class KiteAIChecker(Base):
         amount = TokenAmount(amount=self.wallet.airdrop, decimals=18)
         data = c.encode_abi("claimAirdrop", [amount.Wei, proof])
 
+        #self.parse_params(data)
+
         tx_params = TxParams(to=c.address, data=data, value=0)
 
-        tx = await self.client.transactions.sign_and_send(tx_params=tx_params)
+        tx = await eth_client.transactions.sign_and_send(tx_params=tx_params)
 
         await asyncio.sleep(random.randint(2, 4))
 
