@@ -9,7 +9,7 @@ from web3.types import TxParams
 
 from libs.base import Base
 from libs.eth_async.client import Client
-from libs.eth_async.data.models import Networks, TokenAmount, RawContract
+from libs.eth_async.data.models import RawContract, TokenAmount
 from modules.chain_api import BlockScout
 from utils.browser import Browser
 from utils.db_api.models import Wallet
@@ -18,20 +18,46 @@ from utils.retry import async_retry
 
 KITE_AIRDROP_CONTRACT = "0xb4Aa12EfbF88eAB4Bf7E4625A1CEb21cb81290bB"
 KITE_AIRDROP_ABI = [
-    {"inputs": [{"internalType": "uint256", "name": "amount", "type": "uint256"},
-                {"internalType": "bytes32[]", "name": "merkleProof", "type": "bytes32[]"}], "name": "claimAirdrop",
-     "outputs": [], "stateMutability": "nonpayable", "type": "function"},
-    {"inputs": [{"internalType": "address", "name": "", "type": "address"}], "name": "hasClaimed",
-     "outputs": [{"internalType": "bool", "name": "", "type": "bool"}], "stateMutability": "view", "type": "function"},
-    {"inputs": [{"internalType": "address", "name": "wallet", "type": "address"},
-                {"internalType": "uint256", "name": "amount", "type": "uint256"},
-                {"internalType": "bytes32[]", "name": "merkleProof", "type": "bytes32[]"}], "name": "checkEligibility",
-     "outputs": [{"internalType": "bool", "name": "isEligible", "type": "bool"},
-                 {"internalType": "bool", "name": "canClaim", "type": "bool"}], "stateMutability": "view",
-     "type": "function"},
-    {"inputs": [], "name": "token", "outputs": [{"internalType": "address", "name": "", "type": "address"}],
-     "stateMutability": "view", "type": "function"}
+    {
+        "inputs": [
+            {"internalType": "uint256", "name": "amount", "type": "uint256"},
+            {"internalType": "bytes32[]", "name": "merkleProof", "type": "bytes32[]"},
+        ],
+        "name": "claimAirdrop",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function",
+    },
+    {
+        "inputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "name": "hasClaimed",
+        "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [
+            {"internalType": "address", "name": "wallet", "type": "address"},
+            {"internalType": "uint256", "name": "amount", "type": "uint256"},
+            {"internalType": "bytes32[]", "name": "merkleProof", "type": "bytes32[]"},
+        ],
+        "name": "checkEligibility",
+        "outputs": [
+            {"internalType": "bool", "name": "isEligible", "type": "bool"},
+            {"internalType": "bool", "name": "canClaim", "type": "bool"},
+        ],
+        "stateMutability": "view",
+        "type": "function",
+    },
+    {
+        "inputs": [],
+        "name": "token",
+        "outputs": [{"internalType": "address", "name": "", "type": "address"}],
+        "stateMutability": "view",
+        "type": "function",
+    },
 ]
+
 
 class KiteAIChecker(Base):
     __module_name__ = "Kite AI Checker"
@@ -120,8 +146,7 @@ class KiteAIChecker(Base):
     async def get_merkle_proof(self) -> list[str]:
         await self.sign_in()
         url = f"{self.CHECKER_API}/api/v1/merkle/proof"
-        headers = {**self.base_headers, "Content-Type": "application/json",
-                   "Authorization": f"Bearer {self.auth_token}"}
+        headers = {**self.base_headers, "Content-Type": "application/json", "Authorization": f"Bearer {self.auth_token}"}
 
         payload = {"wallet_address": self.client.account.address.lower()}
         r = await self.session.post(url=url, headers=headers, json=payload, timeout=30)
@@ -130,29 +155,22 @@ class KiteAIChecker(Base):
 
     @controller_log("Airdrop Claim")
     async def claim_controller(self) -> str:
-
         logger.info(f"{self.wallet} | Started Claim {self.wallet.airdrop} KITE on Mainnet")
-
-        eth_client = Client(private_key=self.wallet.private_key, proxy=self.wallet.proxy, network=Networks.Ethereum)
 
         proof = await self.get_merkle_proof()
 
-        AIRDROP_CONTRACT = RawContract(
-            title='airdrop',
-            address='0xdf9aCedDd8a8C130DFe3015C0b1B507cf6571fc9',
-            abi=KITE_AIRDROP_ABI
-        )
+        AIRDROP_CONTRACT = RawContract(title="airdrop", address="0xdf9aCedDd8a8C130DFe3015C0b1B507cf6571fc9", abi=KITE_AIRDROP_ABI)
 
         c = await self.client.contracts.get(contract_address=AIRDROP_CONTRACT)
 
         amount = TokenAmount(amount=self.wallet.airdrop, decimals=18)
         data = c.encode_abi("claimAirdrop", [amount.Wei, proof])
 
-        #self.parse_params(data)
+        # self.parse_params(data)
 
         tx_params = TxParams(to=c.address, data=data, value=0)
 
-        tx = await eth_client.transactions.sign_and_send(tx_params=tx_params)
+        tx = await self.client.transactions.sign_and_send(tx_params=tx_params)
 
         await asyncio.sleep(random.randint(2, 4))
 

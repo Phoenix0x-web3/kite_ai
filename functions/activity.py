@@ -211,7 +211,7 @@ async def checker(wallet):
 
 async def claimer(wallet):
     # await random_sleep_before_start(wallet=wallet)
-    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.Ethereum)
 
     try:
         controller = Controller(client=client, wallet=wallet)
@@ -239,6 +239,7 @@ async def claimer(wallet):
             print(wallet.proxy)
             db.commit()
             return await claimer(wallet)
+
 
 async def execute(wallets: List[Wallet], task_func, random_pause_wallet_after_completion: int = 0):
     while True:
@@ -334,7 +335,7 @@ async def activity(action: int):
         wallets: List[Wallet] = [w for w in wallets if w.eligible]
 
         await execute(wallets, claimer)
-        #wait summary()
+        # wait summary()
 
     #
     # elif action == 3:
