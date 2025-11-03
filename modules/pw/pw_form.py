@@ -75,7 +75,7 @@ class PwForm:
 
                     discord_inviter = DiscordInviter(wallet=self.wallet, invite_code="gokiteai", channel_id=guild_id)
 
-                    _, discord_name = await discord_inviter.get_username()
+                    discord_name = await discord_inviter.get_username()
                     if not discord_name:
                         logger.error(f"{self.wallet} can't get discord username. Use Fake")
                         discord_name = self.faker.user_name()
