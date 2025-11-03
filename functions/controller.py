@@ -35,6 +35,9 @@ class Controller:
     async def checker(self):
         return await self.checker_kite.check_kite_ai()
 
+    async def claimer(self):
+        return await self.checker_kite.claim_controller()
+
     @controller_log('Update Points')
     async def update_db_by_user_info(self):
         user_data = await self.portal.get_user_info()
