@@ -44,6 +44,11 @@ else:
 
 install_dependencies(pip_path)
 
+subprocess.run([python_path, "-m", "patchright", "install", "chrome"], check=True)
+subprocess.run([python_path, "-m", "patchright", "install", "chromium"], check=True)
+subprocess.run([python_path, "-m", "patchright", "install-deps"], check=True)
+
+
 subprocess.run([python_path, "-m", "utils.create_files"], check=True)
 
 print("\nInstallation completed!")
