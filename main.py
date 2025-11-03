@@ -124,6 +124,6 @@ if __name__ == "__main__":
     show_channel_info(PROJECT_NAME)
 
     if platform.system() == "Windows":
-        asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+        asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
 
     asyncio.run(main())
