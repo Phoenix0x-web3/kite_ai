@@ -1,5 +1,5 @@
 RPC_MAP = {
-    "ethereum": "https://0xrpc.io/eth",
+    "ethereum": "https://ethereum-rpc.publicnode.com",
     "base": "https://0xrpc.io/base",
     "base": "https://rpc.therpc.io/base",
     "optimism": "https://0xrpc.io/op",

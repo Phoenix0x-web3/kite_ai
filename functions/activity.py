@@ -205,7 +205,40 @@ async def checker(wallet):
             wallet.proxy = proxy
             print(wallet.proxy)
             db.commit()
-            return await bound_eoa(wallet)
+            return await checker(wallet)
+            logger.error(e)
+
+
+async def claimer(wallet):
+    # await random_sleep_before_start(wallet=wallet)
+    client = Client(private_key=wallet.private_key, proxy=wallet.proxy, network=Networks.KiteTestnet)
+
+    try:
+        controller = Controller(client=client, wallet=wallet)
+
+        result = await controller.claimer()
+
+        if "Not" not in result:
+            wallet.claimed = True
+            db.commit()
+            logger.success(result)
+
+            return result
+
+        logger.error(result)
+
+        return result
+
+    except Exception as e:
+        if "Failed to perform, curl" in str(e):
+            proxies = read_lines("reserver_proxy.txt")
+
+            proxy = parse_proxy(pick_proxy(proxies, 0))
+
+            wallet.proxy = proxy
+            print(wallet.proxy)
+            db.commit()
+            return await claimer(wallet)
             logger.error(e)
 
 
@@ -300,6 +333,9 @@ async def activity(action: int):
         await summary()
 
     elif action == 6:
+        wallets: List[Wallet] = [w for w in wallets if w.eligible]
+
+        await execute(wallets, claimer)
         await summary()
 
     #
