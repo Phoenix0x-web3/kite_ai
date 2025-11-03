@@ -191,11 +191,13 @@ class BrowserBase:
                 "--use-fake-device-for-media-stream",
                 "--use-fake-ui-for-media-stream",
                 f"--lang={locale}",
+                "--disable-setuid-sandbox",
+                "--no-sandbox",
             ],
             ignore_default_args=[
                 "--enable-automation",
-                "--no-sandbox",
                 "--disable-blink-features=AutomationControlled",
+
             ],
         )
         browser_ctx = await browser.new_context(
